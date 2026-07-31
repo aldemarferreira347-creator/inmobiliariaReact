@@ -1,0 +1,41 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "Server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node Server.js",
+    "dev": "nodemon Server.js",
+    "sembrar": "node src/seeds/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.1",
+    "express-validator": "^7.3.2",
+    "file-type": "^22.0.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.0",
+    "multer": "^2.2.0",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^9.0.3",
+    "pdfkit": "^0.19.1",
+    "stripe": "^22.4.0"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
