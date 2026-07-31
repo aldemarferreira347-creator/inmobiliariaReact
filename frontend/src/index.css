@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@source "./";
+@import "./App.css";
+
+@theme {
+  --color-ink: #0f172a;
+  --color-surface: #f8f9fc;
+  --color-surface-alt: #eef1f8;
+
+  --color-navy-950: #080f26;
+  --color-navy-900: #0f1e4a;
+  --color-navy-800: #172560;
+  --color-navy-700: #1e3177;
+  --color-navy-600: #2545a8;
+  --color-navy-500: #3b5fc0;
+  --color-navy-400: #5b7dd4;
+  --color-navy-300: #8ba5e4;
+
+  --color-gold-600: #d4830e;
+  --color-gold-500: #f5a623;
+  --color-gold-400: #f7ba4a;
+  --color-gold-300: #fad080;
+
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  color: var(--color-navy-900);
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
