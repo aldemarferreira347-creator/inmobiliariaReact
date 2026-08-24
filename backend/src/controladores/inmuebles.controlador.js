@@ -21,6 +21,11 @@ const detalle = asyncHandler(async (req, res) => {
   res.json({ exito: true, inmueble, imagenes });
 });
 
+const estadoActual = asyncHandler(async (req, res) => {
+  const estado = await inmuebleServicio.obtenerEstadoActual(req.params.id);
+  res.json({ exito: true, id: req.params.id, estado });
+});
+
 const crear = asyncHandler(async (req, res) => {
   const inmueble = await inmuebleServicio.crear(req.body, req.usuario._id);
   res.status(201).json({ exito: true, inmueble });
@@ -56,6 +61,7 @@ module.exports = {
   destacados,
   tiposDisponibles,
   detalle,
+  estadoActual,
   crear,
   actualizar,
   eliminar,

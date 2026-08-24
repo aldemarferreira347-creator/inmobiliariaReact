@@ -68,6 +68,20 @@ async function enviarEnlaceRecuperacion(usuario, tokenPlano) {
   });
 }
 
+async function enviarConfirmacionSolicitudCambioPassword(usuario, tokenPlano) {
+  const enlace = `${entorno.urlFrontend}/confirmar-cambio-password/${tokenPlano}`;
+  return enviarCorreo({
+    para: usuario.correo,
+    asunto: 'Confirma tu cambio de contrasena',
+    html: plantillaBase(
+      'Confirmacion requerida',
+      `<p>Hola ${usuario.nombre}, solicitaste cambiar tu contrasena. Haz clic en el siguiente enlace para
+       confirmar el cambio. Expira en 15 minutos. Si no fuiste tu, ignora este correo.</p>
+       <p><a href="${enlace}">${enlace}</a></p>`
+    ),
+  });
+}
+
 async function enviarConfirmacionCambioPassword(usuario) {
   return enviarCorreo({
     para: usuario.correo,
@@ -95,6 +109,7 @@ module.exports = {
   enviarCorreo,
   enviarConfirmacionRegistro,
   enviarEnlaceRecuperacion,
+  enviarConfirmacionSolicitudCambioPassword,
   enviarConfirmacionCambioPassword,
   enviarComprobantePago,
 };

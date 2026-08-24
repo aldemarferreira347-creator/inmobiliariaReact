@@ -16,6 +16,10 @@ export function detalle(id) {
   return api.get(`/inmuebles/${id}`).then((r) => r.data);
 }
 
+export function estadoActual(id) {
+  return api.get(`/inmuebles/${id}/estado`).then((r) => r.data);
+}
+
 export function crear(datos) {
   return api.post('/inmuebles', datos).then((r) => r.data);
 }

@@ -4,11 +4,18 @@ import { Building2, Menu, X, LogIn, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexto/AuthContext';
 import CampanaNotificaciones from '../notificaciones/CampanaNotificaciones';
 
+const PANEL_POR_ROL = {
+  administrador: { to: '/administrador', texto: 'Panel Admin' },
+  asesor:        { to: '/asesor',        texto: 'Panel Asesor' },
+};
+
 export default function BarraNavegacion() {
-  const { estaAutenticado, cerrarSesion } = useAuth();
+  const { usuario, estaAutenticado, cerrarSesion } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuAbierto, setMenuAbierto] = useState(false);
+
+  const panel = PANEL_POR_ROL[usuario?.rol] ?? { to: '/perfil', texto: 'Perfil' };
 
   const salir = async () => {
     await cerrarSesion();
@@ -72,11 +79,13 @@ export default function BarraNavegacion() {
               </li>
             )}
 
-            <li>
-              <NavLink to="/perfil" className={['/perfil', '/mis-arriendos', '/favoritos'].includes(location.pathname) ? 'active' : ''} onClick={closeMenu}>
-                Perfil
-              </NavLink>
-            </li>
+            {estaAutenticado && (
+              <li>
+                <NavLink to={panel.to} className={location.pathname.startsWith(panel.to) ? 'active' : ''} onClick={closeMenu}>
+                  {panel.texto}
+                </NavLink>
+              </li>
+            )}
 
             {estaAutenticado ? (
               <li>

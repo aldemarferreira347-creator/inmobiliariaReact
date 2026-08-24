@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   MapPin, Bed, Bath, Ruler, Calendar, Heart, Building2,
@@ -127,6 +127,8 @@ export default function DetalleInmueble() {
   const [errorReserva, setErrorReserva] = useState('');
   const [reservando, setReservando] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [avisoEstadoCambiado, setAvisoEstadoCambiado] = useState(false);
+  const estadoPollingRef = useRef(null);
 
   const isCliente = usuario?.rol === 'cliente';
   const puedeAgendar = isCliente;
@@ -134,8 +136,10 @@ export default function DetalleInmueble() {
 
   useEffect(() => {
     inmueblesServicio.detalle(id).then((res) => {
-      setDatos(res.inmueble ?? res);
+      const inmuebleCargado = res.inmueble ?? res;
+      setDatos(inmuebleCargado);
       setImagenes(res.imagenes ?? []);
+      estadoPollingRef.current = inmuebleCargado.estado;
     }).finally(() => setCargando(false));
 
     if (isCliente) {
@@ -146,9 +150,31 @@ export default function DetalleInmueble() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, usuario]);
 
+  // Polling de estado en vivo (cada 30s) mientras la ficha esta abierta: avisa
+  // una sola vez si el inmueble cambia de estado, sin recargar automaticamente.
+  useEffect(() => {
+    setAvisoEstadoCambiado(false);
+    const intervalo = setInterval(() => {
+      inmueblesServicio.estadoActual(id)
+        .then((res) => {
+          if (res.estado && estadoPollingRef.current && res.estado !== estadoPollingRef.current) {
+            estadoPollingRef.current = res.estado;
+            setAvisoEstadoCambiado(true);
+          }
+        })
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(intervalo);
+  }, [id]);
+
   const alternarFavorito = async () => {
-    const r = await favoritosServicio.alternar(id);
-    setEsFavorito(r.esFavorito);
+    setErrorReserva('');
+    try {
+      const r = await favoritosServicio.alternar(id);
+      setEsFavorito(r.esFavorito);
+    } catch (e) {
+      setErrorReserva(e.response?.data?.mensaje || 'No se pudo actualizar favoritos.');
+    }
   };
 
   const reservar = async () => {
@@ -196,6 +222,15 @@ export default function DetalleInmueble() {
           </Link>
         </div>
       </div>
+
+      {/* Aviso de cambio de estado en vivo (polling) */}
+      {avisoEstadoCambiado && (
+        <div className="container" style={{ paddingTop: '0.75rem' }}>
+          <div className="flash-msg info">
+            Este inmueble acaba de cambiar de estado. Recarga la página para ver la información actualizada.
+          </div>
+        </div>
+      )}
 
       {/* ── SECCIÓN HERO: Slider + Tarjeta ── */}
       <section style={{ background: '#fff', paddingTop: '1.75rem', paddingBottom: '1.75rem', boxShadow: '0 2px 12px rgba(15,23,42,0.06)' }}>
@@ -434,7 +469,25 @@ export default function DetalleInmueble() {
                 Envíanos un mensaje y un asesor te contactará pronto.
               </p>
 
-              <ContactForm inmueble={inmueble} usuario={usuario} />
+              {isCliente ? (
+                <ContactForm inmueble={inmueble} usuario={usuario} />
+              ) : (
+                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                  <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem' }}>
+                    {usuario
+                      ? 'Solo los clientes pueden contactar asesores desde este formulario.'
+                      : 'Inicia sesión para enviar un mensaje sobre este inmueble.'}
+                  </p>
+                  {!usuario && (
+                    <Link
+                      to="/login"
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#0f1e4a', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', fontWeight: 700, fontSize: '0.9375rem', textDecoration: 'none' }}
+                    >
+                      <Lock style={{ width: 18, height: 18 }} /> Iniciar sesión
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -446,9 +499,6 @@ export default function DetalleInmueble() {
 
 /* ── Formulario de contacto ──────────────────────────── */
 function ContactForm({ inmueble, usuario }) {
-  const [nombre,   setNombre]   = useState(usuario ? `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() : '');
-  const [correo,   setCorreo]   = useState(usuario?.correo ?? '');
-  const [telefono, setTelefono] = useState('');
   const [mensaje,  setMensaje]  = useState(`Hola, solicito información del inmueble con código ${inmueble?.codigo ?? ''}.`);
   const [estado,   setEstado]   = useState(null); // { tipo, texto }
   const [enviando, setEnviando] = useState(false);
@@ -456,19 +506,17 @@ function ContactForm({ inmueble, usuario }) {
 
   const enviar = async (e) => {
     e.preventDefault();
-    if (!nombre.trim()) { setEstado({ tipo: 'error', texto: 'Por favor ingresa tu nombre.' }); return; }
-    if (!correo.trim()) { setEstado({ tipo: 'error', texto: 'Por favor ingresa tu correo.' }); return; }
     if (!mensaje.trim()) { setEstado({ tipo: 'error', texto: 'Por favor escribe un mensaje.' }); return; }
     setEstado(null);
     setEnviando(true);
     try {
       // Importación dinámica para no crear dep circular
       const srv = await import('../../servicios/mensajes.servicio');
-      await srv.enviarContacto({ nombre, correo, telefono, mensaje, inmuebleId: inmueble?._id });
+      await srv.enviarContacto({ mensaje, inmuebleId: inmueble?._id });
       setEstado({ tipo: 'success', texto: '¡Mensaje enviado! Un asesor te contactará pronto.' });
       setMensaje('');
-    } catch {
-      setEstado({ tipo: 'error', texto: 'No se pudo enviar el mensaje. Intenta de nuevo.' });
+    } catch (error) {
+      setEstado({ tipo: 'error', texto: error.response?.data?.mensaje || 'No se pudo enviar el mensaje. Intenta de nuevo.' });
     } finally {
       setEnviando(false);
     }
@@ -482,28 +530,9 @@ function ContactForm({ inmueble, usuario }) {
         </div>
       )}
 
-      {[
-        { id: 'c-nombre',  label: 'Nombre',     type: 'text',  value: nombre,   set: setNombre,  placeholder: 'Tu nombre completo', required: true },
-        { id: 'c-email',   label: 'Correo',     type: 'email', value: correo,   set: setCorreo,  placeholder: 'tu@correo.com',      required: true },
-        { id: 'c-telefono',label: 'Teléfono',   type: 'tel',   value: telefono, set: setTelefono,placeholder: 'Opcional',           required: false },
-      ].map(({ id, label, type, value, set, placeholder, required }) => (
-        <div key={id} style={{ marginBottom: '0.875rem' }}>
-          <label htmlFor={id} style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
-            {label} {!required && <span style={{ color: '#94a3b8', fontWeight: 400 }}>(opcional)</span>}
-          </label>
-          <input
-            id={id}
-            type={type}
-            value={value}
-            onChange={(e) => set(e.target.value)}
-            placeholder={placeholder}
-            required={required}
-            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '0.625rem 0.875rem', fontSize: '0.875rem', color: '#1e293b', background: '#f8fafc', outline: 'none', transition: 'border-color 0.15s' }}
-            onFocus={(e) => { e.target.style.borderColor = '#0f1e4a'; e.target.style.background = '#fff'; }}
-            onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; e.target.style.background = '#f8fafc'; }}
-          />
-        </div>
-      ))}
+      <p style={{ margin: '0 0 0.875rem', fontSize: '0.8125rem', color: '#64748b' }}>
+        Se enviará como <strong style={{ color: '#334155' }}>{usuario?.nombre} {usuario?.apellido}</strong> ({usuario?.correo})
+      </p>
 
       <div style={{ marginBottom: '1rem' }}>
         <label htmlFor="c-mensaje" style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>Mensaje</label>

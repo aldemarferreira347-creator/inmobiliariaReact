@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Calendar, Users } from 'lucide-react';
 import * as citasServicio from '../../servicios/citas.servicio';
 import TarjetaCita from '../../componentes/citas/TarjetaCita';
+import Modal from '../../componentes/comunes/Modal';
+import AdminCitaDetalle from './AdminCitaDetalle';
+import { useToast } from '../../contexto/ToastContext';
 
 export default function CitasAdmin() {
   const [sinAsignar, setSinAsignar] = useState([]);
@@ -10,6 +12,8 @@ export default function CitasAdmin() {
   const [asesores, setAsesores] = useState([]);
   const [seleccion, setSeleccion] = useState({});
   const [cargando, setCargando] = useState(true);
+  const [citaDetalleId, setCitaDetalleId] = useState(null);
+  const toast = useToast();
 
   const cargar = async () => {
     setCargando(true);
@@ -28,8 +32,13 @@ export default function CitasAdmin() {
   const asignar = async (citaId) => {
     const asesorId = seleccion[citaId];
     if (!asesorId) return;
-    await citasServicio.asignar(citaId, asesorId);
-    await cargar();
+    try {
+      await citasServicio.asignar(citaId, asesorId);
+      await cargar();
+      toast.exito('Asesor asignado correctamente.');
+    } catch (e) {
+      toast.error(e.response?.data?.mensaje || 'No se pudo asignar el asesor.');
+    }
   };
 
   if (cargando) return <p style={{ padding: '2rem', textAlign: 'center' }}>Cargando citas...</p>;
@@ -106,20 +115,25 @@ export default function CitasAdmin() {
               </p>
               {grupo.citas.map((cita) => (
                 <TarjetaCita key={cita._id} cita={cita}>
-                  <Link
-                    to={`/administrador/citas/${cita._id}`}
+                  <button
+                    type="button"
+                    onClick={() => setCitaDetalleId(cita._id)}
                     className="btn-icon btn-icon--info"
                     title="Ver detalle"
-                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.8125rem', marginTop: '0.25rem' }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.8125rem', marginTop: '0.25rem' }}
                   >
                     Ver detalle
-                  </Link>
+                  </button>
                 </TarjetaCita>
               ))}
             </div>
           ))
         )}
       </div>
+
+      <Modal abierto={Boolean(citaDetalleId)} onCerrar={() => setCitaDetalleId(null)} titulo="Detalle de cita" tamano="lg">
+        {citaDetalleId && <AdminCitaDetalle id={citaDetalleId} />}
+      </Modal>
     </div>
   );
 }

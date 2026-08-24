@@ -23,3 +23,7 @@ export function recuperarPassword(correo) {
 export function resetearPassword(token, contrasenaNueva) {
   return api.post(`/auth/resetear-password/${token}`, { contrasenaNueva }).then((r) => r.data);
 }
+
+export function confirmarCambioPassword(token) {
+  return api.post(`/auth/confirmar-cambio-password/${token}`).then((r) => r.data);
+}

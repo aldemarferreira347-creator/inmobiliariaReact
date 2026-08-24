@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   User, Home, ClipboardList, Tag, Calendar,
-  Star, CreditCard, Bell, LogOut, Camera
+  Star, CreditCard, Bell, LogOut, Camera, X
 } from 'lucide-react';
 import { useAuth } from '../../contexto/AuthContext';
 import * as usuariosServicio from '../../servicios/usuarios.servicio';
@@ -40,6 +39,16 @@ export default function SidebarCliente() {
     }
   };
 
+  const eliminarFoto = async () => {
+    if (!window.confirm('¿Eliminar tu foto de perfil?')) return;
+    try {
+      await usuariosServicio.eliminarFotoPerfil();
+      await recargarSesion();
+    } catch (error) {
+      console.error('Error al eliminar foto:', error);
+    }
+  };
+
   const fotoSrc = usuario?.fotoPerfilUrl ? urlArchivo(usuario.fotoPerfilUrl) : null;
   const avatarLetras = `${usuario?.nombre?.[0] ?? ''}${usuario?.apellido?.[0] ?? ''}`.toUpperCase();
 
@@ -55,6 +64,17 @@ export default function SidebarCliente() {
           </label>
           <input id="foto-input" type="file" accept="image/jpeg,image/png" style={{ display: 'none' }}
             onChange={subirFoto} />
+          {fotoSrc && (
+            <button
+              type="button"
+              onClick={eliminarFoto}
+              title="Eliminar foto"
+              className="avatar-change-btn"
+              style={{ left: 0, right: 'auto', backgroundColor: '#ef4444' }}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <div style={{ marginTop: '1rem', textAlign: 'center' }}>
           <strong style={{ display: 'block', fontWeight: 600, fontSize: '1rem', color: '#0f1e4a' }}>

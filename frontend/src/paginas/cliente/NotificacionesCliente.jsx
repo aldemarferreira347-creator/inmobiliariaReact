@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Bell, Inbox, CheckCheck, CircleCheck, TriangleAlert, CircleX, Clock, Check } from 'lucide-react';
+import { Bell, Inbox, CheckCheck, CircleCheck, TriangleAlert, CircleX, Clock, Check, AlertCircle } from 'lucide-react';
 import * as notificacionesServicio from '../../servicios/notificaciones.servicio';
 
 export default function NotificacionesCliente() {
   const [notificaciones, setNotificaciones] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
 
   const cargar = async () => {
     try {
@@ -24,14 +25,24 @@ export default function NotificacionesCliente() {
   const noLeidas = notificaciones.filter(n => !n.leida).length;
 
   const marcarTodas = async () => {
-    await notificacionesServicio.marcarTodas();
-    setNotificaciones(prev => prev.map(n => ({ ...n, leida: true })));
+    setError('');
+    try {
+      await notificacionesServicio.marcarTodas();
+      setNotificaciones(prev => prev.map(n => ({ ...n, leida: true })));
+    } catch (e) {
+      setError(e.response?.data?.mensaje || 'No se pudieron marcar las notificaciones como leídas.');
+    }
   };
 
   const marcarUna = async (id) => {
     if (!window.confirm('Al marcar como leída la notificación se ocultará/marcará. ¿Aceptas?')) return;
-    await notificacionesServicio.marcarUna(id);
-    setNotificaciones(prev => prev.map(n => n._id === id ? { ...n, leida: true } : n));
+    setError('');
+    try {
+      await notificacionesServicio.marcarUna(id);
+      setNotificaciones(prev => prev.map(n => n._id === id ? { ...n, leida: true } : n));
+    } catch (e) {
+      setError(e.response?.data?.mensaje || 'No se pudo marcar la notificación como leída.');
+    }
   };
 
   const getIcon = (tipo) => {
@@ -72,6 +83,12 @@ export default function NotificacionesCliente() {
             </button>
           )}
         </div>
+
+        {error && (
+          <div className="auth-alert error" style={{ marginBottom: '1rem' }}>
+            <AlertCircle className="h-4 w-4 shrink-0" /> {error}
+          </div>
+        )}
 
         <div className="notif-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {cargando ? (

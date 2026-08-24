@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ClipboardList, AlertCircle, Clock, CreditCard, XCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, Clock, CreditCard, XCircle, CheckCircle } from 'lucide-react';
 import * as reservasServicio from '../../servicios/reservas.servicio';
 import * as tarjetasServicio from '../../servicios/tarjetas.servicio';
 import { obtenerStripe } from '../../utilidades/stripeCliente';
@@ -71,8 +71,13 @@ export default function ReservaDetalle() {
 
   const cancelar = async () => {
     if (!window.confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
-    await reservasServicio.cancelarPropia(id);
-    await cargar();
+    setError('');
+    try {
+      await reservasServicio.cancelarPropia(id);
+      await cargar();
+    } catch (e) {
+      setError(e.response?.data?.mensaje || 'No se pudo cancelar la reserva.');
+    }
   };
 
   if (cargando) return <p style={{ padding: '2rem', textAlign: 'center' }}>Cargando reserva...</p>;

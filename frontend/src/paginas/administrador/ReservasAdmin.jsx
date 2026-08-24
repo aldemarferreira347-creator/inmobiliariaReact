@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ClipboardList, Clock, Search, XCircle, Play } from 'lucide-react';
 import * as reservasServicio from '../../servicios/reservas.servicio';
 import { claseEstadoReserva } from '../../utilidades/colorEstado';
+import Modal from '../../componentes/comunes/Modal';
+import AdminReservaDetalle from './AdminReservaDetalle';
+import { useToast } from '../../contexto/ToastContext';
 
 function formatoMoneda(valor) {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(valor);
@@ -11,9 +13,10 @@ function formatoMoneda(valor) {
 export default function ReservasAdmin() {
   const [reservas, setReservas] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [mensaje, setMensaje] = useState(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
+  const [reservaDetalleId, setReservaDetalleId] = useState(null);
+  const toast = useToast();
 
   const cargar = async () => {
     setCargando(true);
@@ -28,21 +31,23 @@ export default function ReservasAdmin() {
 
   const cancelar = async (id) => {
     if (!window.confirm('¿Cancelar esta reserva administrativamente?')) return;
-    setMensaje(null);
     try {
       await reservasServicio.cancelarAdmin(id);
       await cargar();
-      setMensaje({ tipo: 'success', texto: 'Reserva cancelada.' });
+      toast.exito('Reserva cancelada.');
     } catch (e) {
-      setMensaje({ tipo: 'error', texto: e.response?.data?.mensaje || 'No se pudo cancelar.' });
+      toast.error(e.response?.data?.mensaje || 'No se pudo cancelar.');
     }
   };
 
   const expirarVencidas = async () => {
-    setMensaje(null);
-    const resultado = await reservasServicio.expirarVencidasManual();
-    setMensaje({ tipo: 'success', texto: `Se expiraron ${resultado.totalExpiradas} reserva(s) vencida(s).` });
-    await cargar();
+    try {
+      const resultado = await reservasServicio.expirarVencidasManual();
+      toast.exito(`Se expiraron ${resultado.totalExpiradas} reserva(s) vencida(s).`);
+      await cargar();
+    } catch (e) {
+      toast.error(e.response?.data?.mensaje || 'No se pudo ejecutar la expiración.');
+    }
   };
 
   const filtradas = reservas.filter((r) => {
@@ -70,12 +75,6 @@ export default function ReservasAdmin() {
           <Play className="h-4 w-4" /> Ejecutar expiración manual
         </button>
       </div>
-
-      {mensaje && (
-        <div className={`alert ${mensaje.tipo}`} style={{ marginBottom: '1rem' }}>
-          {mensaje.texto}
-        </div>
-      )}
 
       {/* Tabla */}
       <div className="table-responsive">
@@ -144,9 +143,9 @@ export default function ReservasAdmin() {
                     </td>
                     <td>
                       <div className="row-actions">
-                        <Link to={`/administrador/reservas/${r._id}`} className="btn-icon btn-icon--info" title="Ver detalle" style={{ textDecoration: 'none' }}>
+                        <button type="button" className="btn-icon btn-icon--info" title="Ver detalle" onClick={() => setReservaDetalleId(r._id)}>
                           <Search className="h-3.5 w-3.5" />
-                        </Link>
+                        </button>
                         {!['CANCELADA', 'RECHAZADA', 'EXPIRADA'].includes(r.estado) && (
                           <button type="button" className="btn-icon btn-icon--danger" title="Cancelar reserva" onClick={() => cancelar(r._id)}>
                             <XCircle className="h-3.5 w-3.5" />
@@ -161,6 +160,12 @@ export default function ReservasAdmin() {
           </table>
         )}
       </div>
+
+      <Modal abierto={Boolean(reservaDetalleId)} onCerrar={() => setReservaDetalleId(null)} titulo="Detalle de reserva" tamano="lg">
+        {reservaDetalleId && (
+          <AdminReservaDetalle id={reservaDetalleId} onCancelada={cargar} />
+        )}
+      </Modal>
     </div>
   );
 }

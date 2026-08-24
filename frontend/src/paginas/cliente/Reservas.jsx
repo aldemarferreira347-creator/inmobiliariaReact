@@ -1,18 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ClipboardList, DollarSign, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { ClipboardList, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react';
 import * as reservasServicio from '../../servicios/reservas.servicio';
 import TarjetaReserva from '../../componentes/reservas/TarjetaReserva';
-
-const ESTADOS_ICONO = {
-  PENDIENTE_PAGO: { icon: Clock, color: '#f5a623' },
-  CONFIRMADA:     { icon: CheckCircle, color: '#059669' },
-  RECHAZADA:      { icon: XCircle, color: '#dc2626' },
-  CANCELADA:      { icon: XCircle, color: '#6b7280' },
-};
 
 export default function Reservas() {
   const [reservas, setReservas] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
 
   const cargar = async () => {
     setCargando(true);
@@ -24,8 +18,13 @@ export default function Reservas() {
   useEffect(() => { cargar(); }, []);
 
   const cancelar = async (id) => {
-    await reservasServicio.cancelarPropia(id);
-    await cargar();
+    setError('');
+    try {
+      await reservasServicio.cancelarPropia(id);
+      await cargar();
+    } catch (e) {
+      setError(e.response?.data?.mensaje || 'No se pudo cancelar la reserva.');
+    }
   };
 
   // Estadísticas
@@ -72,6 +71,11 @@ export default function Reservas() {
 
       {/* ── Lista ── */}
       <div className="reservas-container">
+        {error && (
+          <div className="auth-alert error" style={{ marginBottom: '1rem' }}>
+            <AlertCircle className="h-4 w-4 shrink-0" /> {error}
+          </div>
+        )}
         {cargando ? (
           <p style={{ textAlign: 'center', padding: '2rem' }}>Cargando reservas...</p>
         ) : reservas.length === 0 ? (

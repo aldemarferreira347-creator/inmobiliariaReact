@@ -13,6 +13,7 @@ import Login from '../paginas/publico/Login';
 import Registro from '../paginas/publico/Registro';
 import RecuperarPassword from '../paginas/publico/RecuperarPassword';
 import ResetPassword from '../paginas/publico/ResetPassword';
+import ConfirmarCambioPassword from '../paginas/publico/ConfirmarCambioPassword';
 import NoEncontrado from '../paginas/publico/NoEncontrado';
 
 import Perfil from '../paginas/cliente/Perfil';
@@ -38,14 +39,11 @@ import PanelAdmin from '../paginas/administrador/PanelAdmin';
 import UsuariosAdmin from '../paginas/administrador/UsuariosAdmin';
 import PermisosAdmin from '../paginas/administrador/PermisosAdmin';
 import InmueblesAdmin from '../paginas/administrador/InmueblesAdmin';
-import InmuebleFormulario from '../paginas/administrador/InmuebleFormulario';
 import CitasAdmin from '../paginas/administrador/CitasAdmin';
-import AdminCitaDetalle from '../paginas/administrador/AdminCitaDetalle';
 import FranjasAdmin from '../paginas/administrador/FranjasAdmin';
 import MensajesAdmin from '../paginas/administrador/MensajesAdmin';
 import AdminNotificaciones from '../paginas/administrador/AdminNotificaciones';
 import ReservasAdmin from '../paginas/administrador/ReservasAdmin';
-import AdminReservaDetalle from '../paginas/administrador/AdminReservaDetalle';
 import ContratosAdmin from '../paginas/administrador/ContratosAdmin';
 import VentasAdmin from '../paginas/administrador/VentasAdmin';
 import ReportesAdmin from '../paginas/administrador/ReportesAdmin';
@@ -61,6 +59,7 @@ export default function AppRouter() {
         <Route path="/registro" element={<Registro />} />
         <Route path="/recuperar-password" element={<RecuperarPassword />} />
         <Route path="/resetear-password/:token" element={<ResetPassword />} />
+        <Route path="/confirmar-cambio-password/:token" element={<ConfirmarCambioPassword />} />
       </Route>
 
       <Route element={<RutaPrivada />}>
@@ -96,15 +95,11 @@ export default function AppRouter() {
           <Route path="/administrador/usuarios" element={<UsuariosAdmin />} />
           <Route path="/administrador/permisos" element={<PermisosAdmin />} />
           <Route path="/administrador/inmuebles" element={<InmueblesAdmin />} />
-          <Route path="/administrador/inmuebles/nuevo" element={<InmuebleFormulario />} />
-          <Route path="/administrador/inmuebles/:id/editar" element={<InmuebleFormulario />} />
           <Route path="/administrador/citas" element={<CitasAdmin />} />
-          <Route path="/administrador/citas/:id" element={<AdminCitaDetalle />} />
           <Route path="/administrador/franjas" element={<FranjasAdmin />} />
           <Route path="/administrador/mensajes" element={<MensajesAdmin />} />
           <Route path="/administrador/notificaciones" element={<AdminNotificaciones />} />
           <Route path="/administrador/reservas" element={<ReservasAdmin />} />
-          <Route path="/administrador/reservas/:id" element={<AdminReservaDetalle />} />
           <Route path="/administrador/contratos" element={<ContratosAdmin />} />
           <Route path="/administrador/ventas" element={<VentasAdmin />} />
           <Route path="/administrador/reportes" element={<ReportesAdmin />} />

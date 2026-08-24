@@ -17,6 +17,24 @@ const enviar = asyncHandler(async (req, res) => {
   res.status(201).json({ exito: true, mensajes });
 });
 
+// Formulario de contacto de la ficha publica de un inmueble (equivalente a
+// InmuebleController::enviar_mensaje del PHP original). Solo clientes autenticados; el nombre/
+// correo/telefono del formulario son informativos en el frontend, el mensaje siempre viaja con
+// la identidad real del usuario autenticado.
+const enviarContacto = asyncHandler(async (req, res) => {
+  if (req.usuario.rol !== ROLES.CLIENTE) {
+    throw ApiError.prohibido('Solo un cliente puede usar el formulario de contacto');
+  }
+
+  const { mensaje, inmuebleId } = req.body;
+  const [mensajeCreado] = await mensajeServicio.enviarComoCliente(req.usuario._id, {
+    contenido: mensaje,
+    inmuebleId,
+  });
+
+  res.status(201).json({ exito: true, mensaje: mensajeCreado });
+});
+
 const conversaciones = asyncHandler(async (req, res) => {
   let lista;
   if (req.usuario.rol === ROLES.CLIENTE) {
@@ -59,4 +77,4 @@ const noLeidosCount = asyncHandler(async (req, res) => {
   res.json({ exito: true, cantidad });
 });
 
-module.exports = { enviar, conversaciones, hilo, nuevosDesde, marcarLeidos, noLeidosCount };
+module.exports = { enviar, enviarContacto, conversaciones, hilo, nuevosDesde, marcarLeidos, noLeidosCount };

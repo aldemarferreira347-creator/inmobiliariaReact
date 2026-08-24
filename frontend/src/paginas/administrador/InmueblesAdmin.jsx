@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, Plus, Pencil, Trash2, Search } from 'lucide-react';
 import * as inmueblesServicio from '../../servicios/inmuebles.servicio';
+import Modal from '../../componentes/comunes/Modal';
+import InmuebleFormulario from './InmuebleFormulario';
+import { useToast } from '../../contexto/ToastContext';
 
 const ESTADO_CLASE = {
   Disponible: 'accent-green',
@@ -14,7 +17,9 @@ export default function InmueblesAdmin() {
   const [resultado, setResultado] = useState({ inmuebles: [] });
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
-  const [mensaje,  setMensaje]  = useState(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [idSeleccionado, setIdSeleccionado] = useState(null);
+  const toast = useToast();
 
   const cargar = async () => {
     setCargando(true);
@@ -25,15 +30,24 @@ export default function InmueblesAdmin() {
 
   useEffect(() => { cargar(); }, []);
 
+  const abrirNuevo = () => {
+    setIdSeleccionado(null);
+    setModalAbierto(true);
+  };
+
+  const abrirEditar = (id) => {
+    setIdSeleccionado(id);
+    setModalAbierto(true);
+  };
+
   const eliminar = async (id) => {
     if (!window.confirm('¿Eliminar este inmueble?')) return;
-    setMensaje(null);
     try {
       await inmueblesServicio.eliminar(id);
       await cargar();
-      setMensaje({ tipo: 'success', texto: 'Inmueble eliminado correctamente.' });
+      toast.exito('Inmueble eliminado correctamente.');
     } catch (e) {
-      setMensaje({ tipo: 'error', texto: e.response?.data?.mensaje || 'No se pudo eliminar el inmueble.' });
+      toast.error(e.response?.data?.mensaje || 'No se pudo eliminar el inmueble.');
     }
   };
 
@@ -55,16 +69,10 @@ export default function InmueblesAdmin() {
             {resultado.inmuebles.length} inmueble(s) registrados
           </p>
         </div>
-        <Link to="/administrador/inmuebles/nuevo" className="btn-panel-primary" style={{ textDecoration: 'none', gap: 6 }}>
+        <button type="button" className="btn-panel-primary" onClick={abrirNuevo}>
           <Plus className="h-4 w-4" /> Nuevo inmueble
-        </Link>
+        </button>
       </div>
-
-      {mensaje && (
-        <div className={`alert ${mensaje.tipo}`} style={{ marginBottom: '1rem' }}>
-          {mensaje.texto}
-        </div>
-      )}
 
       {/* Tabla */}
       <div className="table-responsive">
@@ -122,9 +130,9 @@ export default function InmueblesAdmin() {
                         <Link to={`/inmuebles/${inmueble._id}`} className="btn-icon btn-icon--info" title="Ver" style={{ textDecoration: 'none' }}>
                           <Search className="h-3.5 w-3.5" />
                         </Link>
-                        <Link to={`/administrador/inmuebles/${inmueble._id}/editar`} className="btn-icon btn-icon--edit" title="Editar" style={{ textDecoration: 'none' }}>
+                        <button type="button" className="btn-icon btn-icon--edit" title="Editar" onClick={() => abrirEditar(inmueble._id)}>
                           <Pencil className="h-3.5 w-3.5" />
-                        </Link>
+                        </button>
                         <button type="button" className="btn-icon btn-icon--danger" title="Eliminar" onClick={() => eliminar(inmueble._id)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -137,6 +145,19 @@ export default function InmueblesAdmin() {
           </table>
         )}
       </div>
+
+      <Modal
+        abierto={modalAbierto}
+        onCerrar={() => setModalAbierto(false)}
+        titulo={idSeleccionado ? 'Editar inmueble' : 'Nuevo inmueble'}
+        tamano="lg"
+      >
+        <InmuebleFormulario
+          id={idSeleccionado}
+          onCreado={(nuevoId) => { setIdSeleccionado(nuevoId); cargar(); }}
+          onActualizado={cargar}
+        />
+      </Modal>
     </div>
   );
 }

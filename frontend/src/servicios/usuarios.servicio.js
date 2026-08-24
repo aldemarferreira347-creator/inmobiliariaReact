@@ -10,8 +10,12 @@ export function subirFotoPerfil(archivo) {
   return api.post('/usuarios/perfil/foto', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data);
 }
 
-export function cambiarContrasena(datos) {
-  return api.put('/usuarios/perfil/contrasena', datos).then((r) => r.data);
+export function solicitarCambioContrasena(datos) {
+  return api.post('/usuarios/perfil/solicitar-cambio-contrasena', datos).then((r) => r.data);
+}
+
+export function eliminarFotoPerfil() {
+  return api.delete('/usuarios/perfil/foto').then((r) => r.data);
 }
 
 export function listarUsuarios(rol) {
@@ -20,6 +24,10 @@ export function listarUsuarios(rol) {
 
 export function crearConRol(datos) {
   return api.post('/usuarios', datos).then((r) => r.data);
+}
+
+export function actualizarUsuarioAdmin(id, datos) {
+  return api.patch(`/usuarios/${id}`, datos).then((r) => r.data);
 }
 
 export function cambiarRol(id, rol) {

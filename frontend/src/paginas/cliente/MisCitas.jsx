@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, AlertCircle } from 'lucide-react';
 import * as citasServicio from '../../servicios/citas.servicio';
 import TarjetaCita from '../../componentes/citas/TarjetaCita';
 
 export default function MisCitas() {
   const [citas, setCitas] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
 
   const cargar = async () => {
     setCargando(true);
@@ -20,8 +21,13 @@ export default function MisCitas() {
 
   const cancelar = async (id) => {
     if (!window.confirm('¿Estás seguro de que deseas cancelar esta cita?')) return;
-    await citasServicio.cancelarPropia(id);
-    await cargar();
+    setError('');
+    try {
+      await citasServicio.cancelarPropia(id);
+      await cargar();
+    } catch (e) {
+      setError(e.response?.data?.mensaje || 'No se pudo cancelar la cita.');
+    }
   };
 
   return (
@@ -32,6 +38,12 @@ export default function MisCitas() {
           <h2><Calendar className="h-5 w-5" /> Mis citas</h2>
           {!cargando && <span className="badge" style={{ backgroundColor: 'var(--color-navy-500)' }}>{citas.length}</span>}
         </div>
+
+        {error && (
+          <div className="auth-alert error" style={{ margin: '1rem 0 0' }}>
+            <AlertCircle className="h-4 w-4 shrink-0" /> {error}
+          </div>
+        )}
 
         {cargando ? (
           <p style={{ padding: '2rem', textAlign: 'center' }}>Cargando citas...</p>

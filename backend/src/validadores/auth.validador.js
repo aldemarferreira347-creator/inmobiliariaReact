@@ -26,9 +26,12 @@ const resetearPasswordValidador = [
   body('contrasenaNueva').isString().isLength({ min: 8 }).withMessage('La contrasena debe tener minimo 8 caracteres'),
 ];
 
+const confirmarCambioContrasenaValidador = [param('token').isString().notEmpty()];
+
 module.exports = {
   registroValidador,
   loginValidador,
   recuperarPasswordValidador,
   resetearPasswordValidador,
+  confirmarCambioContrasenaValidador,
 };

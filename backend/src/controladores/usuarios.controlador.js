@@ -23,9 +23,24 @@ const subirFotoPerfil = asyncHandler(async (req, res) => {
   res.json({ exito: true, usuario: usuarioPublico(req.usuario) });
 });
 
-const cambiarContrasena = asyncHandler(async (req, res) => {
-  await usuarioServicio.cambiarContrasena(req.usuario._id, req.body);
-  res.json({ exito: true, mensaje: 'Contrasena actualizada correctamente' });
+const eliminarFotoPerfil = asyncHandler(async (req, res) => {
+  const anterior = req.usuario.fotoPerfilUrl;
+  if (!anterior) throw ApiError.badRequest('No tienes una foto de perfil para eliminar');
+
+  req.usuario.fotoPerfilUrl = null;
+  await req.usuario.save();
+
+  await almacenamientoServicio.eliminarArchivoSiExiste(anterior);
+
+  res.json({ exito: true, usuario: usuarioPublico(req.usuario) });
+});
+
+const solicitarCambioContrasena = asyncHandler(async (req, res) => {
+  await usuarioServicio.solicitarCambioContrasena(req.usuario._id, req.body);
+  res.json({
+    exito: true,
+    mensaje: 'Validacion exitosa. Revisa tu correo para confirmar el cambio de contrasena.',
+  });
 });
 
 // --- Administracion (HU-16, HU-26) ---
@@ -38,6 +53,11 @@ const listar = asyncHandler(async (req, res) => {
 const crearConRol = asyncHandler(async (req, res) => {
   const usuario = await usuarioServicio.crearConRol(req.body);
   res.status(201).json({ exito: true, usuario: usuarioPublico(usuario) });
+});
+
+const actualizarUsuarioAdmin = asyncHandler(async (req, res) => {
+  const usuario = await usuarioServicio.actualizarUsuarioComoAdmin(req.params.id, req.body);
+  res.json({ exito: true, usuario: usuarioPublico(usuario) });
 });
 
 const cambiarRol = asyncHandler(async (req, res) => {
@@ -58,9 +78,11 @@ const eliminar = asyncHandler(async (req, res) => {
 module.exports = {
   actualizarPerfil,
   subirFotoPerfil,
-  cambiarContrasena,
+  eliminarFotoPerfil,
+  solicitarCambioContrasena,
   listar,
   crearConRol,
+  actualizarUsuarioAdmin,
   cambiarRol,
   cambiarEstado,
   eliminar,

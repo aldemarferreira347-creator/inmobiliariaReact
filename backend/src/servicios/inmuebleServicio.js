@@ -75,6 +75,12 @@ async function obtenerDetalle(id) {
   return { inmueble, imagenes };
 }
 
+async function obtenerEstadoActual(id) {
+  const inmueble = await Inmueble.findById(id).select('estado');
+  if (!inmueble) throw ApiError.noEncontrado('Inmueble no encontrado');
+  return inmueble.estado;
+}
+
 async function crear(datos, usuarioId) {
   const codigo = await generarCodigoUnico();
   const inmueble = await Inmueble.create({ ...datos, codigo, creadoPor: usuarioId });
@@ -178,6 +184,7 @@ module.exports = {
   filtrar,
   obtenerDestacados,
   obtenerDetalle,
+  obtenerEstadoActual,
   crear,
   actualizar,
   eliminar,

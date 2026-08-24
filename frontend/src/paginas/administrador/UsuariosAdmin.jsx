@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Users, UserPlus, RefreshCw, Search } from 'lucide-react';
+import { Users, UserPlus, Pencil, Trash2, RefreshCw, Search } from 'lucide-react';
 import * as usuariosServicio from '../../servicios/usuarios.servicio';
+import Modal from '../../componentes/comunes/Modal';
+import { useToast } from '../../contexto/ToastContext';
 
 const ROLES = ['cliente', 'asesor', 'administrador'];
 const ROL_CLASE = { administrador: 'badge-rol-admin', asesor: 'badge-rol-asesor', cliente: 'badge-rol-cliente' };
@@ -9,10 +11,13 @@ const ROL_CLASE = { administrador: 'badge-rol-admin', asesor: 'badge-rol-asesor'
 export default function UsuariosAdmin() {
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [mensaje,  setMensaje]  = useState(null);
   const [busqueda, setBusqueda] = useState('');
-  const [mostrarForm, setMostrarForm] = useState(false);
-  const { register, handleSubmit, reset } = useForm();
+  const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
+  const [usuarioEditando, setUsuarioEditando] = useState(null);
+  const toast = useToast();
+
+  const formCrear = useForm();
+  const formEditar = useForm();
 
   const cargarUsuarios = async () => {
     setCargando(true);
@@ -23,25 +28,67 @@ export default function UsuariosAdmin() {
   useEffect(() => { cargarUsuarios(); }, []);
 
   const crear = async (datos) => {
-    setMensaje(null);
     try {
       await usuariosServicio.crearConRol(datos);
-      reset();
-      setMostrarForm(false);
+      formCrear.reset();
+      setModalCrearAbierto(false);
       await cargarUsuarios();
-      setMensaje({ tipo: 'success', texto: 'Usuario creado correctamente.' });
+      toast.exito('Usuario creado correctamente.');
     } catch (e) {
-      setMensaje({ tipo: 'error', texto: e.response?.data?.mensaje || 'No se pudo crear el usuario.' });
+      toast.error(e.response?.data?.mensaje || 'No se pudo crear el usuario.');
+    }
+  };
+
+  const abrirEditar = (usuario) => {
+    setUsuarioEditando(usuario);
+    formEditar.reset({
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      correo: usuario.correo,
+      telefono: usuario.telefono,
+    });
+  };
+
+  const guardarEdicion = async (datos) => {
+    try {
+      await usuariosServicio.actualizarUsuarioAdmin(usuarioEditando.id ?? usuarioEditando._id, datos);
+      setUsuarioEditando(null);
+      await cargarUsuarios();
+      toast.exito('Usuario actualizado correctamente.');
+    } catch (e) {
+      toast.error(e.response?.data?.mensaje || 'No se pudo actualizar el usuario.');
     }
   };
 
   const cambiarRol = async (id, rol) => {
-    await usuariosServicio.cambiarRol(id, rol);
-    await cargarUsuarios();
+    try {
+      await usuariosServicio.cambiarRol(id, rol);
+      await cargarUsuarios();
+      toast.exito('Rol actualizado correctamente.');
+    } catch (e) {
+      toast.error(e.response?.data?.mensaje || 'No se pudo cambiar el rol.');
+    }
   };
+
   const cambiarEstado = async (id, estado) => {
-    await usuariosServicio.cambiarEstado(id, estado);
-    await cargarUsuarios();
+    try {
+      await usuariosServicio.cambiarEstado(id, estado);
+      await cargarUsuarios();
+      toast.exito(estado === 'activo' ? 'Usuario activado.' : 'Usuario desactivado.');
+    } catch (e) {
+      toast.error(e.response?.data?.mensaje || 'No se pudo cambiar el estado.');
+    }
+  };
+
+  const eliminar = async (id) => {
+    if (!window.confirm('¿Eliminar este usuario?')) return;
+    try {
+      await usuariosServicio.eliminarUsuario(id);
+      await cargarUsuarios();
+      toast.exito('Usuario eliminado correctamente.');
+    } catch (e) {
+      toast.error(e.response?.data?.mensaje || 'No se pudo eliminar el usuario.');
+    }
   };
 
   const filtrados = usuarios.filter((u) => {
@@ -61,40 +108,10 @@ export default function UsuariosAdmin() {
             {usuarios.length} usuario(s) registrados
           </p>
         </div>
-        <button type="button" className="btn-panel-primary" onClick={() => setMostrarForm(!mostrarForm)}>
-          <UserPlus className="h-4 w-4" /> {mostrarForm ? 'Cancelar' : 'Nuevo usuario'}
+        <button type="button" className="btn-panel-primary" onClick={() => setModalCrearAbierto(true)}>
+          <UserPlus className="h-4 w-4" /> Nuevo usuario
         </button>
       </div>
-
-      {mensaje && (
-        <div className={`alert ${mensaje.tipo}`} style={{ marginBottom: '1rem' }}>
-          {mensaje.texto}
-        </div>
-      )}
-
-      {/* Formulario crear */}
-      {mostrarForm && (
-        <div className="panel-card" style={{ marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <UserPlus style={{ width: 16, height: 16, color: 'var(--color-navy-500)' }} /> Crear usuario
-          </h2>
-          <form onSubmit={handleSubmit(crear)} className="form-grid">
-            <div className="form-group"><label>Nombre</label><input {...register('nombre', { required: true })} /></div>
-            <div className="form-group"><label>Apellido</label><input {...register('apellido', { required: true })} /></div>
-            <div className="form-group"><label>Correo</label><input type="email" {...register('correo', { required: true })} /></div>
-            <div className="form-group"><label>Contraseña</label><input type="password" {...register('contrasena', { required: true, minLength: 8 })} /></div>
-            <div className="form-group">
-              <label>Rol</label>
-              <select {...register('rol', { required: true })}>
-                {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
-            <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <button type="submit" className="btn-panel-primary">Crear usuario</button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* Tabla */}
       <div className="table-responsive">
@@ -146,14 +163,22 @@ export default function UsuariosAdmin() {
                     </span>
                   </td>
                   <td>
-                    <button
-                      type="button"
-                      className={u.estado === 'activo' ? 'btn-icon btn-icon--danger' : 'btn-icon btn-icon--success'}
-                      onClick={() => cambiarEstado(u.id ?? u._id, u.estado === 'activo' ? 'inactivo' : 'activo')}
-                      title={u.estado === 'activo' ? 'Desactivar' : 'Activar'}
-                    >
-                      {u.estado === 'activo' ? '✕' : '✓'}
-                    </button>
+                    <div className="row-actions">
+                      <button type="button" className="btn-icon btn-icon--edit" title="Editar" onClick={() => abrirEditar(u)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        className={u.estado === 'activo' ? 'btn-icon btn-icon--danger' : 'btn-icon btn-icon--success'}
+                        onClick={() => cambiarEstado(u.id ?? u._id, u.estado === 'activo' ? 'inactivo' : 'activo')}
+                        title={u.estado === 'activo' ? 'Desactivar' : 'Activar'}
+                      >
+                        {u.estado === 'activo' ? '✕' : '✓'}
+                      </button>
+                      <button type="button" className="btn-icon btn-icon--danger" title="Eliminar" onClick={() => eliminar(u.id ?? u._id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -161,6 +186,44 @@ export default function UsuariosAdmin() {
           </table>
         )}
       </div>
+
+      {/* Modal: crear usuario */}
+      <Modal abierto={modalCrearAbierto} onCerrar={() => setModalCrearAbierto(false)} titulo="Crear usuario">
+        <form onSubmit={formCrear.handleSubmit(crear)} className="form-grid">
+          <div className="form-group"><label>Nombre</label><input {...formCrear.register('nombre', { required: true })} /></div>
+          <div className="form-group"><label>Apellido</label><input {...formCrear.register('apellido', { required: true })} /></div>
+          <div className="form-group" style={{ gridColumn: '1/-1' }}><label>Correo</label><input type="email" {...formCrear.register('correo', { required: true })} /></div>
+          <div className="form-group"><label>Contraseña</label><input type="password" {...formCrear.register('contrasena', { required: true, minLength: 8 })} /></div>
+          <div className="form-group">
+            <label>Rol</label>
+            <select {...formCrear.register('rol', { required: true })}>
+              {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div className="form-group" style={{ gridColumn: '1/-1', display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <button type="submit" className="btn-panel-primary">Crear usuario</button>
+            <button type="button" onClick={() => setModalCrearAbierto(false)} style={{ background: 'transparent', border: '1px solid #e2e8f0', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', cursor: 'pointer', color: '#334155' }}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: editar usuario */}
+      <Modal abierto={Boolean(usuarioEditando)} onCerrar={() => setUsuarioEditando(null)} titulo="Editar usuario">
+        <form onSubmit={formEditar.handleSubmit(guardarEdicion)} className="form-grid">
+          <div className="form-group"><label>Nombre</label><input {...formEditar.register('nombre', { required: true })} /></div>
+          <div className="form-group"><label>Apellido</label><input {...formEditar.register('apellido')} /></div>
+          <div className="form-group" style={{ gridColumn: '1/-1' }}><label>Correo</label><input type="email" {...formEditar.register('correo', { required: true })} /></div>
+          <div className="form-group" style={{ gridColumn: '1/-1' }}><label>Teléfono</label><input {...formEditar.register('telefono')} /></div>
+          <div className="form-group" style={{ gridColumn: '1/-1', display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <button type="submit" className="btn-panel-primary">Guardar cambios</button>
+            <button type="button" onClick={() => setUsuarioEditando(null)} style={{ background: 'transparent', border: '1px solid #e2e8f0', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', cursor: 'pointer', color: '#334155' }}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

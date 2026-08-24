@@ -9,7 +9,7 @@ export default function Home() {
   const [destacados, setDestacados] = useState([]);
   const [estadisticas, setEstadisticas] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [filtros, setFiltros] = useState({ codigo: '', modalidad: '', precio_max: '' });
+  const [filtros, setFiltros] = useState({ codigo: '', modalidad: '', precio_max: '', habitaciones: '' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +29,7 @@ export default function Home() {
     if (filtros.codigo)     params.set('codigo', filtros.codigo);
     if (filtros.modalidad)  params.set('modalidad', filtros.modalidad);
     if (filtros.precio_max) params.set('precio_max', filtros.precio_max);
+    if (filtros.habitaciones) params.set('habitaciones', filtros.habitaciones);
     navigate(`/catalogo?${params.toString()}`);
   };
 
@@ -119,6 +120,17 @@ export default function Home() {
               <option value="5000000">Hasta $5.000.000</option>
               <option value="100000000">Hasta $100.000.000</option>
               <option value="500000000">Hasta $500.000.000</option>
+            </select>
+            <select
+              id="filtro-hab"
+              aria-label="Habitaciones"
+              value={filtros.habitaciones}
+              onChange={(e) => setFiltros((p) => ({ ...p, habitaciones: e.target.value }))}
+            >
+              <option value="">Habitaciones</option>
+              <option value="1">1 habitación</option>
+              <option value="2">2 habitaciones</option>
+              <option value="3">3 o más</option>
             </select>
             <button type="submit" className="btn-primary" id="btn-buscar">
               Buscar ahora

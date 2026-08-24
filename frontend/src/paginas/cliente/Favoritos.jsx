@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Heart, Search } from 'lucide-react';
+import { Heart, Search, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import * as favoritosServicio from '../../servicios/favoritos.servicio';
 import TarjetaInmueble from '../../componentes/inmuebles/TarjetaInmueble';
@@ -7,6 +7,7 @@ import TarjetaInmueble from '../../componentes/inmuebles/TarjetaInmueble';
 export default function Favoritos() {
   const [inmuebles, setInmuebles] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
 
   const cargar = () => {
     setCargando(true);
@@ -22,8 +23,13 @@ export default function Favoritos() {
   }, []);
 
   const quitarFav = async (inmuebleId) => {
-    await favoritosServicio.alternar(inmuebleId);
-    await cargar();
+    setError('');
+    try {
+      await favoritosServicio.alternar(inmuebleId);
+      await cargar();
+    } catch (e) {
+      setError(e.response?.data?.mensaje || 'No se pudo quitar de favoritos.');
+    }
   };
 
   return (
@@ -38,6 +44,11 @@ export default function Favoritos() {
 
       <section>
         <div className="container propiedades-container">
+          {error && (
+            <div className="auth-alert error" style={{ marginBottom: '1rem' }}>
+              <AlertCircle className="h-4 w-4 shrink-0" /> {error}
+            </div>
+          )}
           {cargando ? (
             <p style={{ padding: '2rem 0', textAlign: 'center' }}>
               Cargando favoritos...

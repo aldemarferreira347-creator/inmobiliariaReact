@@ -8,6 +8,7 @@ const {
   loginValidador,
   recuperarPasswordValidador,
   resetearPasswordValidador,
+  confirmarCambioContrasenaValidador,
 } = require('../validadores/auth.validador');
 
 const router = Router();
@@ -25,5 +26,11 @@ router.post(
   controlador.recuperarPassword
 );
 router.post('/resetear-password/:token', resetearPasswordValidador, validarPeticion, controlador.resetearPassword);
+router.post(
+  '/confirmar-cambio-password/:token',
+  confirmarCambioContrasenaValidador,
+  validarPeticion,
+  controlador.confirmarCambioContrasena
+);
 
 module.exports = router;

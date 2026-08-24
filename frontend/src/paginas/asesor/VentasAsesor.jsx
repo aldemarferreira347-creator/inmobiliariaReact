@@ -39,8 +39,26 @@ export default function VentasAsesor() {
     }
   };
 
-  const subirEscritura = async (id, archivo) => { if (!archivo) return; await ventasServicio.subirEscritura(id, archivo); await cargar(); };
-  const cambiarEstado = async (id, estado) => { await ventasServicio.cambiarEstado(id, estado); await cargar(); };
+  const subirEscritura = async (id, archivo) => {
+    if (!archivo) return;
+    setError('');
+    try {
+      await ventasServicio.subirEscritura(id, archivo);
+      await cargar();
+    } catch (e) {
+      setError(e.response?.data?.mensaje || 'No se pudo subir la escritura.');
+    }
+  };
+
+  const cambiarEstado = async (id, estado) => {
+    setError('');
+    try {
+      await ventasServicio.cambiarEstado(id, estado);
+      await cargar();
+    } catch (e) {
+      setError(e.response?.data?.mensaje || 'No se pudo cambiar el estado de la venta.');
+    }
+  };
 
   return (
     <div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DollarSign, Search, CheckCircle, XCircle } from 'lucide-react';
 import * as ventasServicio from '../../servicios/ventas.servicio';
 import { claseEstadoVenta } from '../../utilidades/colorEstado';
+import { useToast } from '../../contexto/ToastContext';
 
 function formatoMoneda(valor) {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(valor);
@@ -11,7 +12,7 @@ export default function VentasAdmin() {
   const [ventas, setVentas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
-  const [mensaje, setMensaje] = useState(null);
+  const toast = useToast();
 
   const cargar = async () => {
     setCargando(true);
@@ -24,13 +25,12 @@ export default function VentasAdmin() {
 
   const cambiarEstado = async (id, estado) => {
     if (!window.confirm(`¿${estado === 'Finalizada' ? 'Finalizar' : 'Cancelar'} esta venta?`)) return;
-    setMensaje(null);
     try {
       await ventasServicio.cambiarEstado(id, estado);
       await cargar();
-      setMensaje({ tipo: 'success', texto: `Venta ${estado === 'Finalizada' ? 'finalizada' : 'cancelada'} correctamente.` });
+      toast.exito(`Venta ${estado === 'Finalizada' ? 'finalizada' : 'cancelada'} correctamente.`);
     } catch (e) {
-      setMensaje({ tipo: 'error', texto: e.response?.data?.mensaje || 'No se pudo actualizar el estado.' });
+      toast.error(e.response?.data?.mensaje || 'No se pudo actualizar el estado.');
     }
   };
 
@@ -56,10 +56,6 @@ export default function VentasAdmin() {
           </p>
         </div>
       </div>
-
-      {mensaje && (
-        <div className={`alert ${mensaje.tipo}`} style={{ marginBottom: '1rem' }}>{mensaje.texto}</div>
-      )}
 
       {/* Tabla */}
       <div className="table-responsive">

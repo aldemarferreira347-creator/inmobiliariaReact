@@ -17,4 +17,14 @@ const limitadorLogin = rateLimit({
   message: { exito: false, mensaje: 'Demasiados intentos, intenta de nuevo mas tarde.' },
 });
 
-module.exports = { limitadorGeneral, limitadorLogin };
+// Defensa en profundidad por IP para /perfil/solicitar-cambio-contrasena; el limite real de
+// 3 solicitudes/hora por usuario se aplica ademas contra BD en usuarioServicio (HU-25).
+const limitadorCambioPassword = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { exito: false, mensaje: 'Demasiadas solicitudes, intenta de nuevo mas tarde.' },
+});
+
+module.exports = { limitadorGeneral, limitadorLogin, limitadorCambioPassword };

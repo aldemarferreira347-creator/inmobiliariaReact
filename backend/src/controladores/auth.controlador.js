@@ -129,4 +129,19 @@ const resetearPassword = asyncHandler(async (req, res) => {
   res.json({ exito: true, mensaje: 'Contrasena actualizada correctamente' });
 });
 
-module.exports = { registro, login, refrescar, logout, perfil, recuperarPassword, resetearPassword, usuarioPublico };
+const confirmarCambioContrasena = asyncHandler(async (req, res) => {
+  await usuarioServicio.confirmarCambioContrasena(req.params.token);
+  res.json({ exito: true, mensaje: 'Tu contrasena fue cambiada correctamente de forma segura' });
+});
+
+module.exports = {
+  registro,
+  login,
+  refrescar,
+  logout,
+  perfil,
+  recuperarPassword,
+  resetearPassword,
+  confirmarCambioContrasena,
+  usuarioPublico,
+};

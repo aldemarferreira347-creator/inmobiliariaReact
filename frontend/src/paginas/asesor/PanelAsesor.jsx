@@ -4,28 +4,32 @@ import { Building2, Calendar, DollarSign, TrendingUp, MessageSquare } from 'luci
 import { useAuth } from '../../contexto/AuthContext';
 import * as citasServicio from '../../servicios/citas.servicio';
 import * as ventasServicio from '../../servicios/ventas.servicio';
+import * as estadisticasServicio from '../../servicios/estadisticas.servicio';
 import TarjetaCita from '../../componentes/citas/TarjetaCita';
 
 export default function PanelAsesor() {
   const { usuario } = useAuth();
   const [citas, setCitas] = useState([]);
   const [ventas, setVentas] = useState([]);
+  const [inmueblesActivos, setInmueblesActivos] = useState(null);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
     Promise.all([
       citasServicio.citasDeAsesor?.().catch(() => ({ citas: [] })),
       ventasServicio.misVentas?.().catch(() => ({ ventas: [] })),
-    ]).then(([citasData, ventasData]) => {
+      estadisticasServicio.obtener().catch(() => null),
+    ]).then(([citasData, ventasData, statsData]) => {
       setCitas(citasData.citas ?? []);
       setVentas(ventasData.ventas ?? []);
+      setInmueblesActivos(statsData?.estadisticas?.inmuebles ?? null);
     }).finally(() => setCargando(false));
   }, []);
 
   const stats = [
-    { label: 'Citas asignadas',    valor: citas.length,  icon: Calendar,    color: 'var(--color-navy-600)' },
-    { label: 'Ventas registradas', valor: ventas.length, icon: DollarSign,  color: '#059669' },
-    { label: 'Inmuebles activos',  valor: '—',           icon: Building2,   color: '#f5a623' },
+    { label: 'Citas asignadas',    valor: citas.length,          icon: Calendar,    color: 'var(--color-navy-600)' },
+    { label: 'Ventas registradas', valor: ventas.length,         icon: DollarSign,  color: '#059669' },
+    { label: 'Inmuebles activos',  valor: inmueblesActivos ?? '—', icon: Building2,   color: '#f5a623' },
   ];
 
   return (

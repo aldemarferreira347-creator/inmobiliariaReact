@@ -31,6 +31,10 @@ class ApiError extends Error {
     return new ApiError(422, mensaje, detalles);
   }
 
+  static demasiadasPeticiones(mensaje = 'Demasiadas solicitudes, intenta de nuevo mas tarde') {
+    return new ApiError(429, mensaje);
+  }
+
   static interno(mensaje = 'Error interno del servidor') {
     return new ApiError(500, mensaje);
   }

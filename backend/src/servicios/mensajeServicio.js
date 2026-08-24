@@ -1,5 +1,6 @@
 const Mensaje = require('../modelos/Mensaje');
 const Usuario = require('../modelos/Usuario');
+const Inmueble = require('../modelos/Inmueble');
 const ApiError = require('../utilidades/ApiError');
 const notificacionServicio = require('./notificacionServicio');
 const { ROLES, ESTADOS_USUARIO } = require('../utilidades/constantes');
@@ -16,57 +17,67 @@ async function obtenerStaffActivo() {
   return Usuario.find({ rol: { $in: [ROLES.ASESOR, ROLES.ADMINISTRADOR] }, estado: ESTADOS_USUARIO.ACTIVO });
 }
 
-async function enviarComoCliente(clienteId, { staffId, contenido, adjuntoBase64 }) {
+// Replica AsesorDeConversacionExistente del PHP original: si el cliente ya tiene un hilo previo
+// con algun miembro del staff, se reutiliza ese mismo asesor para mantener continuidad.
+async function obtenerStaffDeConversacionExistente(clienteId) {
+  const ultimoMensaje = await Mensaje.findOne({ hiloId: new RegExp(`^${clienteId}_`) }).sort({ fechaEnvio: -1 });
+  if (!ultimoMensaje) return null;
+  const staffId = ultimoMensaje.hiloId.split('_')[1];
+  return Usuario.findOne({ _id: staffId, estado: ESTADOS_USUARIO.ACTIVO });
+}
+
+async function elegirStaffDestino(clienteId, staffActivo) {
+  const staffExistente = await obtenerStaffDeConversacionExistente(clienteId);
+  if (staffExistente && staffActivo.some((s) => String(s._id) === String(staffExistente._id))) {
+    return staffExistente;
+  }
+  return staffActivo[Math.floor(Math.random() * staffActivo.length)];
+}
+
+async function enviarComoCliente(clienteId, { staffId, contenido, adjuntoBase64, inmuebleId }) {
   if (!contenido?.trim() && !adjuntoBase64) {
     throw ApiError.badRequest('El mensaje no puede estar vacio');
   }
 
+  let staff;
   if (staffId) {
-    const staff = await Usuario.findOne({ _id: staffId, estado: ESTADOS_USUARIO.ACTIVO });
+    staff = await Usuario.findOne({ _id: staffId, estado: ESTADOS_USUARIO.ACTIVO });
     if (!staff || !esStaff(staff)) throw ApiError.badRequest('Destinatario invalido');
-
-    const mensaje = await Mensaje.create({
-      hiloId: construirHiloId(clienteId, staffId),
-      remitente: clienteId,
-      destinatario: staffId,
-      contenido,
-      adjuntoBase64,
-    });
-
-    await notificacionServicio.crear({
-      usuario: staffId,
-      tipo: 'info',
-      titulo: 'Nuevo mensaje',
-      mensaje: 'Tienes un nuevo mensaje de un cliente',
-      entidadRelacionada: { tipo: 'mensaje', id: mensaje._id },
-    });
-
-    return [mensaje];
+  } else {
+    // Sin staff especifico (primer contacto, p.ej. formulario de la ficha del inmueble): se elige
+    // un unico destinatario -reutilizando la conversacion existente o al azar-, igual que
+    // InmuebleController::enviar_mensaje del PHP original (nunca se reparte a todo el staff).
+    const staffActivo = await obtenerStaffActivo();
+    if (staffActivo.length === 0) {
+      throw ApiError.conflicto('No hay personal disponible para recibir mensajes en este momento');
+    }
+    staff = await elegirStaffDestino(clienteId, staffActivo);
   }
 
-  // Sin staff especifico (primer contacto): se envia una copia a cada miembro activo del staff,
-  // igual que Mensaje::enviarATodos del PHP original.
-  const staffActivo = await obtenerStaffActivo();
-  if (staffActivo.length === 0) {
-    throw ApiError.conflicto('No hay personal disponible para recibir mensajes en este momento');
+  const mensaje = await Mensaje.create({
+    hiloId: construirHiloId(clienteId, staff._id),
+    remitente: clienteId,
+    destinatario: staff._id,
+    inmueble: inmuebleId || null,
+    contenido,
+    adjuntoBase64,
+  });
+
+  let textoNotificacion = 'Tienes un nuevo mensaje de un cliente';
+  if (inmuebleId) {
+    const inmueble = await Inmueble.findById(inmuebleId).select('titulo');
+    if (inmueble) textoNotificacion = `Tienes un nuevo mensaje de un cliente sobre "${inmueble.titulo}"`;
   }
 
-  const mensajes = await Mensaje.insertMany(
-    staffActivo.map((staff) => ({
-      hiloId: construirHiloId(clienteId, staff._id),
-      remitente: clienteId,
-      destinatario: staff._id,
-      contenido,
-      adjuntoBase64,
-    }))
-  );
+  await notificacionServicio.crear({
+    usuario: staff._id,
+    tipo: 'info',
+    titulo: 'Nuevo mensaje',
+    mensaje: textoNotificacion,
+    entidadRelacionada: { tipo: 'mensaje', id: mensaje._id },
+  });
 
-  await notificacionServicio.crearParaVarios(
-    staffActivo.map((s) => s._id),
-    { tipo: 'info', titulo: 'Nuevo mensaje', mensaje: 'Tienes un nuevo mensaje de un cliente' }
-  );
-
-  return mensajes;
+  return [mensaje];
 }
 
 async function responder(staffId, { clienteId, contenido, adjuntoBase64 }) {

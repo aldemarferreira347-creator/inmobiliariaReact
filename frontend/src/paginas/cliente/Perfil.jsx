@@ -114,9 +114,14 @@ function PasswordForm({ onGuardar, onCancelar }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+      <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: '0 0 0.5rem', display: 'flex', gap: '0.4rem' }}>
+        <ShieldCheck className="h-4 w-4 shrink-0" style={{ marginTop: 1 }} />
+        Por seguridad, te enviaremos un enlace de confirmación a tu correo antes de aplicar el cambio.
+      </p>
+
+      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
         <button type="submit" className="btn-panel-primary" disabled={!puedeEnviar}>
-          {isSubmitting ? 'Actualizando...' : 'Actualizar contraseña'}
+          {isSubmitting ? 'Enviando...' : 'Solicitar cambio de contraseña'}
         </button>
         <button type="button" onClick={onCancelar} style={{ background: 'transparent', border: '1px solid #e2e8f0', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', cursor: 'pointer', color: '#334155' }}>
           Cancelar
@@ -174,11 +179,11 @@ export default function Perfil() {
   const cambiarPass = async (datos) => {
     setMsgPerfil(null);
     try {
-      const r = await usuariosServicio.cambiarContrasena(datos);
-      setMsgPerfil({ tipo: 'success', texto: r.mensaje ?? 'Contraseña actualizada.' });
+      const r = await usuariosServicio.solicitarCambioContrasena(datos);
+      setMsgPerfil({ tipo: 'success', texto: r.mensaje ?? 'Revisa tu correo para confirmar el cambio de contraseña.' });
       setModo('ver');
     } catch (e) {
-      setMsgPerfil({ tipo: 'error', texto: e.response?.data?.mensaje || 'No se pudo cambiar la contraseña.' });
+      setMsgPerfil({ tipo: 'error', texto: e.response?.data?.mensaje || 'No se pudo solicitar el cambio de contraseña.' });
       throw e; // re-lanzar para que PasswordForm pueda capturar si es necesario
     }
   };

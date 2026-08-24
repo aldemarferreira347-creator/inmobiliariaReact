@@ -1,13 +1,16 @@
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexto/AuthContext';
+import { ToastProvider } from './contexto/ToastContext';
 import AppRouter from './rutas/AppRouter';
 
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRouter />
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <AppRouter />
+        </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

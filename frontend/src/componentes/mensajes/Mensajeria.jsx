@@ -14,6 +14,7 @@ export default function Mensajeria({ titulo }) {
   const [seleccion, setSeleccion] = useState(null);
   const [mensajesHilo, setMensajesHilo] = useState([]);
   const [texto, setTexto] = useState('');
+  const [error, setError] = useState('');
 
   const cargarConversaciones = async () => {
     const data = await mensajesServicio.conversaciones();
@@ -29,11 +30,16 @@ export default function Mensajeria({ titulo }) {
 
   const abrirConversacion = async (conv) => {
     setSeleccion(conv);
-    const otroId = otroParaMi(conv)?._id;
-    const data = await mensajesServicio.hilo(otroId);
-    setMensajesHilo(data.mensajes);
-    await mensajesServicio.marcarLeidos(otroId);
-    await cargarConversaciones();
+    setError('');
+    try {
+      const otroId = otroParaMi(conv)?._id;
+      const data = await mensajesServicio.hilo(otroId);
+      setMensajesHilo(data.mensajes);
+      await mensajesServicio.marcarLeidos(otroId);
+      await cargarConversaciones();
+    } catch (e) {
+      setError(e.response?.data?.mensaje || 'No se pudo abrir la conversación.');
+    }
   };
 
   usePolling(async () => {
@@ -48,16 +54,22 @@ export default function Mensajeria({ titulo }) {
 
   const enviar = async () => {
     if (!texto.trim() || !seleccion) return;
-    const otroId = otroParaMi(seleccion)?._id;
-    await mensajesServicio.enviar(otroId, texto.trim());
-    setTexto('');
-    const data = await mensajesServicio.hilo(otroId);
-    setMensajesHilo(data.mensajes);
+    setError('');
+    try {
+      const otroId = otroParaMi(seleccion)?._id;
+      await mensajesServicio.enviar(otroId, texto.trim());
+      setTexto('');
+      const data = await mensajesServicio.hilo(otroId);
+      setMensajesHilo(data.mensajes);
+    } catch (e) {
+      setError(e.response?.data?.mensaje || 'No se pudo enviar el mensaje.');
+    }
   };
 
   return (
     <div>
       <h1>{titulo}</h1>
+      {error && <p className="error-general">{error}</p>}
       <div className="mensajeria">
         <div className="lista-conversaciones">
           {conversaciones.length === 0 ? (

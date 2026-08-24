@@ -3,6 +3,9 @@ const crypto = require('crypto');
 const Usuario = require('../modelos/Usuario');
 const LoginAttempt = require('../modelos/LoginAttempt');
 const PasswordReset = require('../modelos/PasswordReset');
+const Cita = require('../modelos/Cita');
+const Reserva = require('../modelos/Reserva');
+const Contrato = require('../modelos/Contrato');
 const ApiError = require('../utilidades/ApiError');
 const { ROLES, ESTADOS_USUARIO } = require('../utilidades/constantes');
 const { hashToken } = require('./tokenServicio');
@@ -119,13 +122,35 @@ async function actualizarPerfil(usuarioId, { nombre, apellido, telefono, direcci
   return usuario;
 }
 
-async function cambiarContrasena(usuarioId, { contrasenaActual, contrasenaNueva }) {
+const MAX_SOLICITUDES_CAMBIO_POR_HORA = 3;
+const VENTANA_SOLICITUD_CAMBIO_MS = 60 * 60 * 1000;
+const EXPIRACION_CAMBIO_CONTRASENA_MS = 15 * 60 * 1000;
+
+// HU-25 / seguridad: el cambio de contrasena de un usuario ya autenticado exige confirmacion por
+// correo (doble opt-in), igual que PasswordController::requestChange/confirmChange del PHP
+// original. La contrasena NO se aplica aqui: solo se calcula el hash, se guarda en un token de un
+// solo uso y se aplica recien cuando el usuario confirma el enlace (confirmarCambioContrasena).
+async function solicitarCambioContrasena(usuarioId, { contrasenaActual, contrasenaNueva }) {
   const usuario = await Usuario.findById(usuarioId).select('+contrasenaHash');
   if (!usuario) throw ApiError.noEncontrado('Usuario no encontrado');
+
+  const desde = new Date(Date.now() - VENTANA_SOLICITUD_CAMBIO_MS);
+  const solicitudesRecientes = await PasswordReset.countDocuments({
+    usuario: usuarioId,
+    nuevaContrasenaHash: { $ne: null },
+    createdAt: { $gte: desde },
+  });
+  if (solicitudesRecientes >= MAX_SOLICITUDES_CAMBIO_POR_HORA) {
+    throw ApiError.demasiadasPeticiones('Demasiadas solicitudes. Intenta de nuevo en una hora.');
+  }
 
   const coincide = await bcrypt.compare(contrasenaActual, usuario.contrasenaHash);
   if (!coincide) {
     throw ApiError.badRequest('La contrasena actual es incorrecta');
+  }
+
+  if (contrasenaActual === contrasenaNueva) {
+    throw ApiError.badRequest('La nueva contrasena no puede ser igual a la actual');
   }
 
   if (!contrasenaEsSegura(contrasenaNueva)) {
@@ -134,9 +159,47 @@ async function cambiarContrasena(usuarioId, { contrasenaActual, contrasenaNueva 
     );
   }
 
-  usuario.contrasenaHash = await bcrypt.hash(contrasenaNueva, RONDAS_BCRYPT);
+  const nuevaContrasenaHash = await bcrypt.hash(contrasenaNueva, RONDAS_BCRYPT);
+  const tokenPlano = crypto.randomBytes(32).toString('hex');
+
+  // Invalida solicitudes de cambio previas sin usar (evita fatiga/replay de enlaces viejos).
+  await PasswordReset.updateMany(
+    { usuario: usuarioId, nuevaContrasenaHash: { $ne: null }, usado: false },
+    { usado: true }
+  );
+
+  await PasswordReset.create({
+    usuario: usuarioId,
+    tokenHash: hashToken(tokenPlano),
+    nuevaContrasenaHash,
+    expiraEn: new Date(Date.now() + EXPIRACION_CAMBIO_CONTRASENA_MS),
+  });
+
+  await correoServicio.enviarConfirmacionSolicitudCambioPassword(usuario, tokenPlano);
+}
+
+async function confirmarCambioContrasena(tokenPlano) {
+  const tokenHash = hashToken(tokenPlano);
+  const registro = await PasswordReset.findOne({
+    tokenHash,
+    usado: false,
+    expiraEn: { $gt: new Date() },
+    nuevaContrasenaHash: { $ne: null },
+  });
+
+  if (!registro) {
+    throw ApiError.badRequest('El enlace es invalido, ya fue utilizado o expiro');
+  }
+
+  const usuario = await Usuario.findById(registro.usuario);
+  if (!usuario) throw ApiError.noEncontrado('Usuario no encontrado');
+
+  usuario.contrasenaHash = registro.nuevaContrasenaHash;
   usuario.tokenVersion += 1; // invalida cualquier sesion activa previa (equivalente a regenerar sesion)
   await usuario.save();
+
+  registro.usado = true;
+  await registro.save();
 
   await correoServicio.enviarConfirmacionCambioPassword(usuario);
 
@@ -251,6 +314,33 @@ async function cambiarEstado(usuarioIdObjetivo, nuevoEstado, usuarioQueEjecuta) 
   return usuario;
 }
 
+// RN: no se puede eliminar (desactivar) un usuario con citas activas, reservas en espera de pago
+// o un contrato de arriendo vigente - evita dejar huerfano un proceso en curso del cliente/asesor.
+async function tieneVinculosActivos(usuarioId) {
+  const citaActiva = await Cita.exists({
+    $or: [{ cliente: usuarioId }, { asesor: usuarioId }],
+    estado: { $in: ['Pendiente', 'Asignada'] },
+  });
+  if (citaActiva) return 'tiene una cita pendiente o asignada';
+
+  const reservaEnEsperaDePago = await Reserva.exists({
+    cliente: usuarioId,
+    estado: { $in: ['PENDIENTE_PAGO', 'PROCESANDO_PAGO'] },
+  });
+  if (reservaEnEsperaDePago) return 'tiene una reserva en espera de pago';
+
+  const reservaConfirmada = await Reserva.exists({ cliente: usuarioId, estado: 'CONFIRMADA' });
+  if (reservaConfirmada) return 'tiene una reserva confirmada sin contrato asociado';
+
+  const reservaIds = await Reserva.find({ cliente: usuarioId }).distinct('_id');
+  if (reservaIds.length > 0) {
+    const contratoVigente = await Contrato.exists({ reserva: { $in: reservaIds }, estado: 'Vigente' });
+    if (contratoVigente) return 'tiene un contrato de arriendo vigente';
+  }
+
+  return null;
+}
+
 async function eliminarUsuario(usuarioIdObjetivo, usuarioQueEjecuta) {
   if (String(usuarioIdObjetivo) === String(usuarioQueEjecuta._id)) {
     throw ApiError.badRequest('No puedes eliminar tu propia cuenta');
@@ -258,6 +348,11 @@ async function eliminarUsuario(usuarioIdObjetivo, usuarioQueEjecuta) {
 
   const usuario = await Usuario.findById(usuarioIdObjetivo);
   if (!usuario) throw ApiError.noEncontrado('Usuario no encontrado');
+
+  const motivo = await tieneVinculosActivos(usuarioIdObjetivo);
+  if (motivo) {
+    throw ApiError.conflicto(`No se puede eliminar el usuario: ${motivo}`);
+  }
 
   // Igual que el PHP original: no se permite hard-delete, solo desactivar. La eliminacion fisica
   // se bloquea porque otras colecciones (reservas, ventas, etc.) referencian este usuario.
@@ -268,12 +363,30 @@ async function eliminarUsuario(usuarioIdObjetivo, usuarioQueEjecuta) {
   return usuario;
 }
 
+async function actualizarUsuarioComoAdmin(usuarioIdObjetivo, { nombre, apellido, correo, telefono }) {
+  const usuario = await Usuario.findById(usuarioIdObjetivo);
+  if (!usuario) throw ApiError.noEncontrado('Usuario no encontrado');
+
+  if (correo !== undefined && correo.toLowerCase() !== usuario.correo) {
+    const existente = await Usuario.findOne({ correo: correo.toLowerCase() });
+    if (existente) throw ApiError.conflicto('Ya existe una cuenta registrada con este correo');
+    usuario.correo = correo.toLowerCase();
+  }
+  if (nombre !== undefined) usuario.nombre = nombre;
+  if (apellido !== undefined) usuario.apellido = apellido;
+  if (telefono !== undefined) usuario.telefono = telefono;
+
+  await usuario.save();
+  return usuario;
+}
+
 module.exports = {
   contrasenaEsSegura,
   registrar,
   verificarCredenciales,
   actualizarPerfil,
-  cambiarContrasena,
+  solicitarCambioContrasena,
+  confirmarCambioContrasena,
   solicitarRecuperacion,
   restablecerContrasena,
   listarUsuarios,
@@ -281,4 +394,5 @@ module.exports = {
   cambiarRol,
   cambiarEstado,
   eliminarUsuario,
+  actualizarUsuarioComoAdmin,
 };

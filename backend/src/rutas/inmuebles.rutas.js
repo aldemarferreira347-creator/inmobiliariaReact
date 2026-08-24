@@ -19,6 +19,7 @@ router.get('/', controlador.listar);
 router.get('/destacados', controlador.destacados);
 router.get('/tipos', controlador.tiposDisponibles);
 router.get('/:id', idInmuebleValidador, validarPeticion, controlador.detalle);
+router.get('/:id/estado', idInmuebleValidador, validarPeticion, controlador.estadoActual);
 
 // --- Administracion (HU-04, HU-08) ---
 router.post('/', soloAdmin, crearInmuebleValidador, validarPeticion, controlador.crear);

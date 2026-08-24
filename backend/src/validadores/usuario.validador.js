@@ -8,7 +8,7 @@ const actualizarPerfilValidador = [
   body('direccion').optional().trim(),
 ];
 
-const cambiarContrasenaValidador = [
+const solicitarCambioContrasenaValidador = [
   body('contrasenaActual').isString().notEmpty(),
   body('contrasenaNueva').isString().isLength({ min: 8 }),
 ];
@@ -25,10 +25,19 @@ const cambiarRolValidador = [param('id').isMongoId(), body('rol').isIn(TODOS_LOS
 
 const cambiarEstadoValidador = [param('id').isMongoId(), body('estado').isIn(Object.values(ESTADOS_USUARIO))];
 
+const actualizarUsuarioAdminValidador = [
+  param('id').isMongoId(),
+  body('nombre').optional().trim().notEmpty().isLength({ max: 100 }),
+  body('apellido').optional().trim().isLength({ max: 100 }),
+  body('correo').optional().trim().isEmail().normalizeEmail(),
+  body('telefono').optional().trim(),
+];
+
 module.exports = {
   actualizarPerfilValidador,
-  cambiarContrasenaValidador,
+  solicitarCambioContrasenaValidador,
   crearConRolValidador,
   cambiarRolValidador,
   cambiarEstadoValidador,
+  actualizarUsuarioAdminValidador,
 };

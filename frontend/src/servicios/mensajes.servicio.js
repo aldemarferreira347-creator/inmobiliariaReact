@@ -24,6 +24,6 @@ export function noLeidosContador() {
   return api.get('/mensajes/no-leidos/contador').then((r) => r.data);
 }
 
-export function enviarContacto(datos) {
-  return api.post('/mensajes/contacto', datos).then((r) => r.data);
+export function enviarContacto({ mensaje, inmuebleId }) {
+  return api.post('/mensajes/contacto', { mensaje, inmuebleId }).then((r) => r.data);
 }

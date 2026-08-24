@@ -69,6 +69,7 @@ export default function TarjetasGuardadas() {
   const [tarjetas, setTarjetas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [error, setError] = useState('');
 
   const cargar = async () => {
     setCargando(true);
@@ -83,8 +84,13 @@ export default function TarjetasGuardadas() {
 
   const eliminar = async (id) => {
     if (!window.confirm('¿Eliminar esta tarjeta guardada?')) return;
-    await tarjetasServicio.eliminar(id);
-    await cargar();
+    setError('');
+    try {
+      await tarjetasServicio.eliminar(id);
+      await cargar();
+    } catch (e) {
+      setError(e.response?.data?.mensaje || 'No se pudo eliminar la tarjeta.');
+    }
   };
 
   return (
@@ -102,6 +108,12 @@ export default function TarjetasGuardadas() {
             <Plus className="h-4 w-4" /> {mostrarForm ? 'Cerrar form' : 'Agregar tarjeta'}
           </button>
         </div>
+
+        {error && (
+          <div className="auth-alert error" style={{ marginBottom: '1rem' }}>
+            <AlertCircle className="h-4 w-4 shrink-0" /> {error}
+          </div>
+        )}
 
         {mostrarForm && (
           <div style={{ padding: '1.5rem', backgroundColor: 'rgba(15,23,42,0.02)', borderRadius: '0.5rem', marginBottom: '1.5rem', border: '1px solid rgba(0,0,0,0.05)' }}>

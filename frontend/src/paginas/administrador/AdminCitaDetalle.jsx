@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Building2, PenLine, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { User, Building2, PenLine, Clock } from 'lucide-react';
 import * as citasServicio from '../../servicios/citas.servicio';
 import TarjetaCita from '../../componentes/citas/TarjetaCita';
 
@@ -11,9 +11,7 @@ const ESTADO_COLOR = {
   Pendiente: { bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
 };
 
-export default function AdminCitaDetalle() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+export default function AdminCitaDetalle({ id }) {
   const [cita, setCita] = useState(null);
   const [observacion, setObservacion] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -29,30 +27,13 @@ export default function AdminCitaDetalle() {
   }, [id]);
 
   if (cargando) return <p style={{ padding: '3rem', textAlign: 'center' }}>Cargando detalle de la cita...</p>;
-  if (!cita)    return (
-    <div style={{ padding: '3rem', textAlign: 'center' }}>
-      <p>Cita no encontrada.</p>
-      <Link to="/administrador/citas" style={{ display: 'inline-flex', gap: 6, marginTop: '1rem', textDecoration: 'none' }} className="btn-panel-primary">
-        <ArrowLeft className="h-4 w-4" /> Volver
-      </Link>
-    </div>
-  );
+  if (!cita)    return <p style={{ padding: '3rem', textAlign: 'center' }}>Cita no encontrada.</p>;
 
   const estadoStyle = ESTADO_COLOR[cita.estado] ?? ESTADO_COLOR.Cancelada;
 
   return (
     <div>
-      {/* Topbar */}
-      <div className="panel-topbar">
-        <div>
-          <button type="button" onClick={() => navigate('/administrador/citas')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(15,23,42,0.6)', fontSize: '0.875rem', marginBottom: '0.5rem', padding: 0 }}>
-            <ArrowLeft className="h-4 w-4" /> Volver a gestión de citas
-          </button>
-          <h1 style={{ margin: 0, fontSize: '1.375rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Calendar style={{ width: 22, height: 22, color: 'var(--color-navy-500)' }} />
-            Detalle de cita
-          </h1>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, backgroundColor: estadoStyle.bg, color: estadoStyle.color, border: `1px solid ${estadoStyle.border}`, padding: '0.4rem 0.9rem', borderRadius: '0.375rem', fontWeight: 600, fontSize: '0.875rem' }}>
           {cita.estado}
         </span>

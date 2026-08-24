@@ -4,13 +4,15 @@ const autenticacion = require('../middlewares/autenticacion');
 const { requerirRoles } = require('../middlewares/autorizacion');
 const validarPeticion = require('../middlewares/validacion');
 const subida = require('../middlewares/subidaArchivos');
+const { limitadorCambioPassword } = require('../middlewares/limitadorPeticiones');
 const { ROLES } = require('../utilidades/constantes');
 const {
   actualizarPerfilValidador,
-  cambiarContrasenaValidador,
+  solicitarCambioContrasenaValidador,
   crearConRolValidador,
   cambiarRolValidador,
   cambiarEstadoValidador,
+  actualizarUsuarioAdminValidador,
 } = require('../validadores/usuario.validador');
 
 const router = Router();
@@ -19,10 +21,24 @@ router.use(autenticacion);
 
 router.put('/perfil', actualizarPerfilValidador, validarPeticion, controlador.actualizarPerfil);
 router.post('/perfil/foto', subida.single('foto'), controlador.subirFotoPerfil);
-router.put('/perfil/contrasena', cambiarContrasenaValidador, validarPeticion, controlador.cambiarContrasena);
+router.delete('/perfil/foto', controlador.eliminarFotoPerfil);
+router.post(
+  '/perfil/solicitar-cambio-contrasena',
+  limitadorCambioPassword,
+  solicitarCambioContrasenaValidador,
+  validarPeticion,
+  controlador.solicitarCambioContrasena
+);
 
 router.get('/', requerirRoles([ROLES.ADMINISTRADOR]), controlador.listar);
 router.post('/', requerirRoles([ROLES.ADMINISTRADOR]), crearConRolValidador, validarPeticion, controlador.crearConRol);
+router.patch(
+  '/:id',
+  requerirRoles([ROLES.ADMINISTRADOR]),
+  actualizarUsuarioAdminValidador,
+  validarPeticion,
+  controlador.actualizarUsuarioAdmin
+);
 router.patch(
   '/:id/rol',
   requerirRoles([ROLES.ADMINISTRADOR]),

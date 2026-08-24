@@ -8,4 +8,9 @@ const enviarMensajeValidador = [
 
 const otroIdValidador = [param('otroId').isMongoId()];
 
-module.exports = { enviarMensajeValidador, otroIdValidador };
+const enviarContactoValidador = [
+  body('mensaje').trim().notEmpty().withMessage('El mensaje no puede estar vacio').isLength({ max: 2000 }),
+  body('inmuebleId').optional().isMongoId(),
+];
+
+module.exports = { enviarMensajeValidador, otroIdValidador, enviarContactoValidador };

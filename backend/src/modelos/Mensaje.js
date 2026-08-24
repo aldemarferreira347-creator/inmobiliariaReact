@@ -6,6 +6,9 @@ const mensajeSchema = new mongoose.Schema(
     hiloId: { type: String, required: true, index: true },
     remitente: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
     destinatario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true, index: true },
+    // Inmueble sobre el que se consulta (solo cuando el mensaje nace del formulario de contacto
+    // de una ficha de inmueble); null en el resto de la mensajeria general.
+    inmueble: { type: mongoose.Schema.Types.ObjectId, ref: 'Inmueble', default: null },
     contenido: { type: String, trim: true },
     // Se preserva el enfoque del PHP original (adjunto codificado inline) para no romper paridad
     // funcional; es una imagen pequena en base64, ya limitada por express.json({limit:'2mb'}).

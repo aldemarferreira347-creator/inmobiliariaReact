@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Clock, CheckCircle, AlertCircle, Save } from 'lucide-react';
+import { Clock, Pencil, Save } from 'lucide-react';
 import * as citasServicio from '../../servicios/citas.servicio';
+import Modal from '../../componentes/comunes/Modal';
+import { useToast } from '../../contexto/ToastContext';
 
 const NOMBRES_DIA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 export default function FranjasAdmin() {
   const [franjas, setFranjas] = useState({});
   const [cargando, setCargando] = useState(true);
-  const [mensaje, setMensaje] = useState(null);
+  const [diaEditando, setDiaEditando] = useState(null);
+  const [borrador, setBorrador] = useState(null);
+  const [guardando, setGuardando] = useState(false);
+  const toast = useToast();
 
   const cargar = async () => {
     setCargando(true);
@@ -25,17 +30,26 @@ export default function FranjasAdmin() {
     cargar();
   }, []);
 
-  const actualizarCampo = (dia, campo, valor) => {
-    setFranjas((prev) => ({ ...prev, [dia]: { ...prev[dia], [campo]: valor } }));
+  const abrirEditar = (dia) => {
+    setBorrador({ ...franjas[dia] });
+    setDiaEditando(dia);
   };
 
-  const guardar = async (dia) => {
-    setMensaje(null);
+  const actualizarBorrador = (campo, valor) => {
+    setBorrador((prev) => ({ ...prev, [campo]: valor }));
+  };
+
+  const guardar = async () => {
+    setGuardando(true);
     try {
-      await citasServicio.guardarFranja(franjas[dia]);
-      setMensaje({ tipo: 'success', texto: `Franja de ${NOMBRES_DIA[dia]} guardada correctamente.` });
+      await citasServicio.guardarFranja(borrador);
+      setFranjas((prev) => ({ ...prev, [diaEditando]: borrador }));
+      toast.exito(`Franja de ${NOMBRES_DIA[diaEditando]} guardada correctamente.`);
+      setDiaEditando(null);
     } catch (error) {
-      setMensaje({ tipo: 'error', texto: error.response?.data?.mensaje || 'No se pudo guardar la franja.' });
+      toast.error(error.response?.data?.mensaje || 'No se pudo guardar la franja.');
+    } finally {
+      setGuardando(false);
     }
   };
 
@@ -53,75 +67,101 @@ export default function FranjasAdmin() {
         </div>
       </div>
 
-      {mensaje && (
-        <div className={`alert ${mensaje.tipo}`} style={{ marginBottom: '1.5rem' }}>
-          {mensaje.tipo === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-          {mensaje.texto}
-        </div>
-      )}
-
       {cargando ? (
         <p style={{ padding: '2rem', textAlign: 'center' }}>Cargando franjas...</p>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
           {Object.values(franjas).map((franja) => (
             <div key={franja.diaSemana} className="panel-card" style={{ opacity: franja.activo ? 1 : 0.6, transition: 'opacity 0.2s' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <h3 style={{ margin: 0, fontSize: '1.125rem' }}>{NOMBRES_DIA[franja.diaSemana]}</h3>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={franja.activo}
-                    onChange={(e) => actualizarCampo(franja.diaSemana, 'activo', e.target.checked)}
-                  />
-                  <span className="slider round"></span>
-                </label>
+                <span className={franja.activo ? 'accent-green' : 'accent-red'}>{franja.activo ? 'Activo' : 'Inactivo'}</span>
               </div>
-
-              <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                <label style={{ fontSize: '0.8125rem', marginBottom: '0.25rem' }}>Hora inicio</label>
-                <input
-                  type="time"
-                  value={franja.horaInicio}
-                  onChange={(e) => actualizarCampo(franja.diaSemana, 'horaInicio', e.target.value)}
-                  disabled={!franja.activo}
-                />
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                <label style={{ fontSize: '0.8125rem', marginBottom: '0.25rem' }}>Hora fin</label>
-                <input
-                  type="time"
-                  value={franja.horaFin}
-                  onChange={(e) => actualizarCampo(franja.diaSemana, 'horaFin', e.target.value)}
-                  disabled={!franja.activo}
-                />
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label style={{ fontSize: '0.8125rem', marginBottom: '0.25rem' }}>Duración por cita (min)</label>
-                <input
-                  type="number"
-                  min="15"
-                  step="15"
-                  value={franja.duracionSlotMinutos}
-                  onChange={(e) => actualizarCampo(franja.diaSemana, 'duracionSlotMinutos', Number(e.target.value))}
-                  disabled={!franja.activo}
-                />
-              </div>
-
+              <p style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: '#334155' }}>
+                {franja.horaInicio} – {franja.horaFin}
+              </p>
+              <p style={{ margin: '0 0 1rem', fontSize: '0.8125rem', color: 'rgba(15,23,42,0.55)' }}>
+                Citas de {franja.duracionSlotMinutos} min
+              </p>
               <button
                 type="button"
                 className="btn-panel-primary"
                 style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}
-                onClick={() => guardar(franja.diaSemana)}
+                onClick={() => abrirEditar(franja.diaSemana)}
               >
-                <Save className="h-4 w-4" /> Guardar cambios
+                <Pencil className="h-4 w-4" /> Editar
               </button>
             </div>
           ))}
         </div>
       )}
+
+      <Modal
+        abierto={diaEditando !== null}
+        onCerrar={() => setDiaEditando(null)}
+        titulo={diaEditando !== null ? `Franja de ${NOMBRES_DIA[diaEditando]}` : ''}
+      >
+        {borrador && (
+          <div>
+            <label className="toggle-switch" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <input
+                type="checkbox"
+                checked={borrador.activo}
+                onChange={(e) => actualizarBorrador('activo', e.target.checked)}
+              />
+              <span className="slider round"></span>
+              <span style={{ fontSize: '0.875rem' }}>{borrador.activo ? 'Activo' : 'Inactivo'}</span>
+            </label>
+
+            <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+              <label style={{ fontSize: '0.8125rem', marginBottom: '0.25rem' }}>Hora inicio</label>
+              <input
+                type="time"
+                value={borrador.horaInicio}
+                onChange={(e) => actualizarBorrador('horaInicio', e.target.value)}
+                disabled={!borrador.activo}
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+              <label style={{ fontSize: '0.8125rem', marginBottom: '0.25rem' }}>Hora fin</label>
+              <input
+                type="time"
+                value={borrador.horaFin}
+                onChange={(e) => actualizarBorrador('horaFin', e.target.value)}
+                disabled={!borrador.activo}
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label style={{ fontSize: '0.8125rem', marginBottom: '0.25rem' }}>Duración por cita (min)</label>
+              <input
+                type="number"
+                min="15"
+                step="15"
+                value={borrador.duracionSlotMinutos}
+                onChange={(e) => actualizarBorrador('duracionSlotMinutos', Number(e.target.value))}
+                disabled={!borrador.activo}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn-panel-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                onClick={guardar}
+                disabled={guardando}
+              >
+                <Save className="h-4 w-4" /> {guardando ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+              <button type="button" onClick={() => setDiaEditando(null)} style={{ background: 'transparent', border: '1px solid #e2e8f0', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', cursor: 'pointer', color: '#334155' }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

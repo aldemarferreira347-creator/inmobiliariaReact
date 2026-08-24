@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, CreditCard, ClipboardList, AlertTriangle, Clock, CheckCircle, XCircle, Ban } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { FileText, CreditCard, ClipboardList, AlertTriangle, Clock, CheckCircle, XCircle, Ban } from 'lucide-react';
 import * as reservasServicio from '../../servicios/reservas.servicio';
 import { claseEstadoReserva } from '../../utilidades/colorEstado';
+import { useToast } from '../../contexto/ToastContext';
 
 function fmt(v) {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v ?? 0);
@@ -29,13 +30,11 @@ const ESTADO_COLOR = {
   EXPIRADA:        '#64748b',
 };
 
-export default function AdminReservaDetalle() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+export default function AdminReservaDetalle({ id, onCancelada }) {
   const [reserva, setReserva] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [mensaje, setMensaje] = useState(null);
   const [cancelando, setCancelando] = useState(false);
+  const toast = useToast();
 
   const cargar = async () => {
     setCargando(true);
@@ -54,27 +53,20 @@ export default function AdminReservaDetalle() {
   const cancelar = async () => {
     if (!window.confirm('¿Cancelar esta reserva administrativamente? El inmueble volverá a estar disponible.')) return;
     setCancelando(true);
-    setMensaje(null);
     try {
       await reservasServicio.cancelarAdmin(id);
-      setMensaje({ tipo: 'success', texto: 'Reserva cancelada correctamente.' });
+      toast.exito('Reserva cancelada correctamente.');
       await cargar();
+      onCancelada?.();
     } catch (e) {
-      setMensaje({ tipo: 'error', texto: e.response?.data?.mensaje || 'No se pudo cancelar la reserva.' });
+      toast.error(e.response?.data?.mensaje || 'No se pudo cancelar la reserva.');
     } finally {
       setCancelando(false);
     }
   };
 
   if (cargando) return <p style={{ padding: '3rem', textAlign: 'center' }}>Cargando detalle...</p>;
-  if (!reserva)  return (
-    <div style={{ padding: '3rem', textAlign: 'center' }}>
-      <p>Reserva no encontrada.</p>
-      <Link to="/administrador/reservas" className="btn-panel-primary" style={{ textDecoration: 'none', marginTop: '1rem', display: 'inline-flex', gap: 6 }}>
-        <ArrowLeft className="h-4 w-4" /> Volver
-      </Link>
-    </div>
-  );
+  if (!reserva)  return <p style={{ padding: '3rem', textAlign: 'center' }}>Reserva no encontrada.</p>;
 
   const estado = reserva.estado;
   const IconoEstado = ESTADO_ICONO[estado] ?? Clock;
@@ -83,31 +75,15 @@ export default function AdminReservaDetalle() {
 
   return (
     <div>
-      {/* Topbar */}
-      <div className="panel-topbar">
-        <div>
-          <button type="button" onClick={() => navigate('/administrador/reservas')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(15,23,42,0.6)', fontSize: '0.875rem', marginBottom: '0.5rem', padding: 0 }}>
-            <ArrowLeft className="h-4 w-4" /> Volver a reservas
-          </button>
-          <h1 style={{ margin: 0, fontSize: '1.375rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <FileText style={{ width: 22, height: 22, color: 'var(--color-navy-500)' }} />
-            {reserva.codigo}
-          </h1>
-          <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: 'rgba(15,23,42,0.55)' }}>
-            {reserva.inmueble?.titulo} · {reserva.cliente?.nombre} {reserva.cliente?.apellido}
-          </p>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+        <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(15,23,42,0.55)' }}>
+          {reserva.inmueble?.titulo} · {reserva.cliente?.nombre} {reserva.cliente?.apellido}
+        </p>
         <span className={`badge ${claseEstadoReserva(estado)}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
           <IconoEstado className="h-4 w-4" style={{ color: colorEstado }} />
           {estado}
         </span>
       </div>
-
-      {mensaje && (
-        <div className={`alert ${mensaje.tipo}`} style={{ marginBottom: '1.5rem' }}>
-          {mensaje.texto}
-        </div>
-      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr minmax(260px, 320px)', gap: '1.5rem', alignItems: 'start' }}>
 

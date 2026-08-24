@@ -36,9 +36,14 @@ export default function CampanaNotificaciones() {
   };
 
   const marcarTodas = async () => {
-    await notificacionesServicio.marcarTodas();
-    setCantidad(0);
-    setNotificaciones((prev) => prev.map((n) => ({ ...n, leida: true })));
+    try {
+      await notificacionesServicio.marcarTodas();
+      setCantidad(0);
+      setNotificaciones((prev) => prev.map((n) => ({ ...n, leida: true })));
+    } catch (error) {
+      console.error('No se pudieron marcar las notificaciones como leidas:', error);
+      cargarContador();
+    }
   };
 
   return (

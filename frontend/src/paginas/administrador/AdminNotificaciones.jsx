@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Megaphone, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { Megaphone, Send } from 'lucide-react';
 import * as notificacionesServicio from '../../servicios/notificaciones.servicio';
 import * as usuariosServicio from '../../servicios/usuarios.servicio';
+import { useToast } from '../../contexto/ToastContext';
 
 export default function AdminNotificaciones() {
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm({ defaultValues: { destino: 'todos' } });
   const [usuarios, setUsuarios] = useState([]);
-  const [mensaje, setMensaje] = useState(null);
   const [enviando, setEnviando] = useState(false);
-  
+  const toast = useToast();
+
   const destino = watch('destino');
 
   useEffect(() => {
@@ -17,14 +18,13 @@ export default function AdminNotificaciones() {
   }, []);
 
   const enviar = async (datos) => {
-    setMensaje(null);
     setEnviando(true);
     try {
       await notificacionesServicio.enviarBroadcast(datos);
-      setMensaje({ tipo: 'success', texto: 'Notificación enviada correctamente.' });
+      toast.exito('Notificación enviada correctamente.');
       reset({ destino: 'todos', usuarioId: '', titulo: '', mensaje: '' });
     } catch (error) {
-      setMensaje({ tipo: 'error', texto: error.response?.data?.mensaje || 'No se pudo enviar la notificación.' });
+      toast.error(error.response?.data?.mensaje || 'No se pudo enviar la notificación.');
     } finally {
       setEnviando(false);
     }
@@ -45,13 +45,6 @@ export default function AdminNotificaciones() {
       </div>
 
       <div className="panel-card" style={{ maxWidth: 600 }}>
-        {mensaje && (
-          <div className={`alert ${mensaje.tipo}`} style={{ marginBottom: '1.5rem' }}>
-            {mensaje.tipo === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-            {mensaje.texto}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit(enviar)} className="form-grid">
           <div className="form-group" style={{ gridColumn: '1/-1' }}>
             <label>Destinatario</label>
