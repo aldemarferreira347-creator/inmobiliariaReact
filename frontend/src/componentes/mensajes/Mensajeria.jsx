@@ -28,14 +28,18 @@ export default function Mensajeria({ titulo }) {
   const otroParaMi = (conv) => (usuario.rol === 'cliente' ? conv.staff : conv.cliente);
   const puedoResponder = (conv) => usuario.rol === 'cliente' || String(conv.staff?._id) === String(usuario._id);
 
+  const paramsParaAdmin = (conv) => (usuario?.rol === 'administrador' && conv?.staff?._id ? { staffId: conv.staff._id } : {});
+
   const abrirConversacion = async (conv) => {
     setSeleccion(conv);
     setError('');
     try {
       const otroId = otroParaMi(conv)?._id;
-      const data = await mensajesServicio.hilo(otroId);
+      const data = await mensajesServicio.hilo(otroId, paramsParaAdmin(conv));
       setMensajesHilo(data.mensajes);
-      await mensajesServicio.marcarLeidos(otroId);
+      if (usuario.rol !== 'administrador') {
+        await mensajesServicio.marcarLeidos(otroId);
+      }
       await cargarConversaciones();
     } catch (e) {
       setError(e.response?.data?.mensaje || 'No se pudo abrir la conversación.');
@@ -46,7 +50,7 @@ export default function Mensajeria({ titulo }) {
     if (!seleccion) return;
     const otroId = otroParaMi(seleccion)?._id;
     const desde = mensajesHilo.length > 0 ? mensajesHilo[mensajesHilo.length - 1].fechaEnvio : new Date(0).toISOString();
-    const data = await mensajesServicio.nuevosDesde(otroId, desde);
+    const data = await mensajesServicio.nuevosDesde(otroId, desde, paramsParaAdmin(seleccion));
     if (data.mensajes.length > 0) {
       setMensajesHilo((prev) => [...prev, ...data.mensajes]);
     }
@@ -59,7 +63,7 @@ export default function Mensajeria({ titulo }) {
       const otroId = otroParaMi(seleccion)?._id;
       await mensajesServicio.enviar(otroId, texto.trim());
       setTexto('');
-      const data = await mensajesServicio.hilo(otroId);
+      const data = await mensajesServicio.hilo(otroId, paramsParaAdmin(seleccion));
       setMensajesHilo(data.mensajes);
     } catch (e) {
       setError(e.response?.data?.mensaje || 'No se pudo enviar el mensaje.');

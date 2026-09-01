@@ -1,7 +1,7 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   User, Home, ClipboardList, Tag, Calendar,
-  Star, CreditCard, Bell, LogOut, Camera, X
+  Star, CreditCard, Bell, MessageSquare, LogOut, Camera, X
 } from 'lucide-react';
 import { useAuth } from '../../contexto/AuthContext';
 import * as usuariosServicio from '../../servicios/usuarios.servicio';
@@ -14,6 +14,7 @@ const ENLACES_CLIENTE_SIDEBAR = [
   { to: '/mis-compras',     texto: 'Mis compras',     Icon: Tag },
   { to: '/mis-citas',       texto: 'Mis citas',       Icon: Calendar },
   { to: '/favoritos',       texto: 'Mis favoritos',   Icon: Star },
+  { to: '/mensajes',        texto: 'Mis mensajes',    Icon: MessageSquare },
   { to: '/tarjetas',        texto: 'Mis tarjetas',    Icon: CreditCard },
   { to: '/notificaciones',  texto: 'Notificaciones',  Icon: Bell },
 ];

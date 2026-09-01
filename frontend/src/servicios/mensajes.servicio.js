@@ -4,12 +4,12 @@ export function conversaciones() {
   return api.get('/mensajes/conversaciones').then((r) => r.data);
 }
 
-export function hilo(otroId) {
-  return api.get(`/mensajes/hilo/${otroId}`).then((r) => r.data);
+export function hilo(otroId, params = {}) {
+  return api.get(`/mensajes/hilo/${otroId}`, { params }).then((r) => r.data);
 }
 
-export function nuevosDesde(otroId, desde) {
-  return api.get(`/mensajes/hilo/${otroId}/nuevos`, { params: { desde } }).then((r) => r.data);
+export function nuevosDesde(otroId, desde, params = {}) {
+  return api.get(`/mensajes/hilo/${otroId}/nuevos`, { params: { desde, ...params } }).then((r) => r.data);
 }
 
 export function marcarLeidos(otroId) {

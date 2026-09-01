@@ -31,8 +31,13 @@ const autenticacion = asyncHandler(async (req, res, next) => {
     throw ApiError.noAutorizado('Sesion invalidada, inicia sesion de nuevo');
   }
 
-  usuario.ultimoAcceso = new Date();
-  await usuario.save({ validateBeforeSave: false });
+  // Actualizar ultimoAcceso con throttling (maximo una escritura cada 60s por usuario)
+  const ahora = new Date();
+  const ultimoAccesoMs = usuario.ultimoAcceso ? new Date(usuario.ultimoAcceso).getTime() : 0;
+  if (ahora.getTime() - ultimoAccesoMs > 60 * 1000) {
+    usuario.ultimoAcceso = ahora;
+    Usuario.updateOne({ _id: usuario._id }, { ultimoAcceso: ahora }).catch(() => {});
+  }
 
   req.usuario = usuario;
   next();

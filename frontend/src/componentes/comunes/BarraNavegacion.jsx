@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Building2, Menu, X, LogIn, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexto/AuthContext';
-import CampanaNotificaciones from '../notificaciones/CampanaNotificaciones';
 
 const PANEL_POR_ROL = {
   administrador: { to: '/administrador', texto: 'Panel Admin' },

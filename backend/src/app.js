@@ -31,6 +31,10 @@ app.use(limitadorGeneral);
 
 app.use('/uploads', express.static('uploads'));
 
+app.get('/', (req, res) => {
+  res.json({ exito: true, mensaje: 'API de Inmobiliaria en funcionamiento' });
+});
+
 app.use('/api', rutas);
 
 app.use(rutaNoEncontrada);

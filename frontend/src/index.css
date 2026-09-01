@@ -23,6 +23,8 @@
 
   --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-full: 9999px;
 }
 
 body {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Calendar, Users } from 'lucide-react';
+import { Calendar, Users, Search } from 'lucide-react';
 import * as citasServicio from '../../servicios/citas.servicio';
 import TarjetaCita from '../../componentes/citas/TarjetaCita';
 import Modal from '../../componentes/comunes/Modal';
@@ -118,11 +118,11 @@ export default function CitasAdmin() {
                   <button
                     type="button"
                     onClick={() => setCitaDetalleId(cita._id)}
-                    className="btn-icon btn-icon--info"
+                    className="btn-panel-edit"
                     title="Ver detalle"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.8125rem', marginTop: '0.25rem' }}
                   >
-                    Ver detalle
+                    <Search style={{ width: 14, height: 14 }} /> Ver detalle
                   </button>
                 </TarjetaCita>
               ))}

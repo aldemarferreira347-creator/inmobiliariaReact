@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Building2, KeyRound, AlertCircle } from 'lucide-react';
 import * as authServicio from '../../servicios/auth.servicio';
 
 export default function ResetPassword() {
@@ -17,7 +18,7 @@ export default function ResetPassword() {
       await authServicio.resetearPassword(token, datos.contrasenaNueva);
       navigate('/login');
     } catch (error) {
-      setErrorGeneral(error.response?.data?.mensaje || 'El enlace es invalido o expiro');
+      setErrorGeneral(error.response?.data?.mensaje || 'El enlace es inválido o expiró.');
     } finally {
       setEnviando(false);
     }
@@ -25,19 +26,50 @@ export default function ResetPassword() {
 
   return (
     <div className="auth-shell">
-      <div className="pagina-formulario">
-        <h1>Restablecer contrasena</h1>
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div>
-            <label htmlFor="contrasenaNueva">Nueva contrasena</label>
-            <input id="contrasenaNueva" type="password" {...register('contrasenaNueva', { required: true, minLength: 8 })} />
-            {errors.contrasenaNueva && <span className="error-campo">Contrasena invalida</span>}
+      <div className="auth-card">
+        <div className="auth-brand">
+          <span className="logo-badge"><Building2 className="h-5 w-5" /></span>
+          García Inmobiliaria
+        </div>
+
+        <h1>Restablecer contraseña</h1>
+        <p className="auth-subtitle">
+          Ingresa tu nueva contraseña para acceder a tu cuenta.
+        </p>
+
+        {errorGeneral && (
+          <div className="auth-alert error">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {errorGeneral}
           </div>
-          {errorGeneral && <p className="error-general">{errorGeneral}</p>}
-          <button type="submit" className="btn-primary" disabled={enviando}>
-            {enviando ? 'Guardando...' : 'Restablecer contrasena'}
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="auth-field">
+            <label htmlFor="contrasenaNueva">Nueva contraseña</label>
+            <input
+              id="contrasenaNueva"
+              type="password"
+              placeholder="Mínimo 8 caracteres (A-Z, a-z, 0-9, @#$)"
+              {...register('contrasenaNueva', { required: true, minLength: 8 })}
+            />
+            {errors.contrasenaNueva && (
+              <span className="error-campo">La contraseña debe tener mínimo 8 caracteres</span>
+            )}
+          </div>
+
+          <button type="submit" className="auth-submit" disabled={enviando}>
+            {enviando ? (
+              <><span className="spinner" /> Guardando...</>
+            ) : (
+              <><KeyRound className="h-4 w-4" /> Guardar nueva contraseña</>
+            )}
           </button>
         </form>
+
+        <p className="auth-footer-link">
+          <Link to="/login">← Volver al inicio de sesión</Link>
+        </p>
       </div>
     </div>
   );

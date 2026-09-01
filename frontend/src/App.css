@@ -259,17 +259,118 @@ button:disabled { @apply cursor-not-allowed opacity-60; }
   color: var(--color-navy-900);
 }
 .btn-reservas-warning:hover { background-color: var(--color-gold-400); }
-.btn-icon {
-  @apply inline-flex h-8 w-8 items-center justify-center rounded-lg border border-black/10 transition hover:bg-black/5;
-  color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+.btn-icon,
+button.btn-icon,
+a.btn-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  min-width: 2rem !important;
+  max-width: 2rem !important;
+  border-radius: 0.5rem !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  background-color: transparent !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  padding-inline: 0 !important;
+  padding-block: 0 !important;
+  line-height: 1 !important;
+  transition: all 0.15s ease-in-out !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
 }
-.btn-icon:hover { color: var(--color-navy-700); }
-.btn-icon--info { @apply border-sky-200 bg-sky-50 text-sky-600 hover:border-sky-300 hover:bg-sky-100 hover:text-sky-700; }
-.btn-icon--edit { @apply border-violet-200 bg-violet-50 text-violet-600 hover:border-violet-300 hover:bg-violet-100 hover:text-violet-700; }
-.btn-icon--danger { @apply border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 hover:text-red-700; }
-.btn-icon--success { @apply border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 hover:text-emerald-700; }
-.btn-icon--warning {
-  @apply border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100;
+.btn-icon svg,
+button.btn-icon svg,
+a.btn-icon svg {
+  width: 15px !important;
+  height: 15px !important;
+  min-width: 15px !important;
+  min-height: 15px !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+  display: block !important;
+  flex-shrink: 0 !important;
+}
+.btn-icon:hover,
+button.btn-icon:hover,
+a.btn-icon:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  color: #1e293b !important;
+}
+.btn-icon--info,
+button.btn-icon--info,
+a.btn-icon--info {
+  border-color: #bae6fd !important;
+  background-color: #f0f9ff !important;
+  color: #0284c7 !important;
+}
+.btn-icon--info:hover,
+button.btn-icon--info:hover,
+a.btn-icon--info:hover {
+  border-color: #7dd3fc !important;
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+}
+.btn-icon--edit,
+button.btn-icon--edit,
+a.btn-icon--edit {
+  border-color: #ddd6fe !important;
+  background-color: #f5f3ff !important;
+  color: #7c3aed !important;
+}
+.btn-icon--edit:hover,
+button.btn-icon--edit:hover,
+a.btn-icon--edit:hover {
+  border-color: #c4b5fd !important;
+  background-color: #ede9fe !important;
+  color: #6d28d9 !important;
+}
+.btn-icon--danger,
+button.btn-icon--danger,
+a.btn-icon--danger {
+  border-color: #fecaca !important;
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+.btn-icon--danger:hover,
+button.btn-icon--danger:hover,
+a.btn-icon--danger:hover {
+  border-color: #fca5a5 !important;
+  background-color: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+.btn-icon--success,
+button.btn-icon--success,
+a.btn-icon--success {
+  border-color: #bbf7d0 !important;
+  background-color: #f0fdf4 !important;
+  color: #16a34a !important;
+}
+.btn-icon--success:hover,
+button.btn-icon--success:hover,
+a.btn-icon--success:hover {
+  border-color: #86efac !important;
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+}
+.btn-icon--warning,
+button.btn-icon--warning,
+a.btn-icon--warning {
+  border-color: #fed7aa !important;
+  background-color: #fff7ed !important;
+  color: #ea580c !important;
+}
+.btn-icon--warning:hover,
+button.btn-icon--warning:hover,
+a.btn-icon--warning:hover {
+  border-color: #fdba74 !important;
+  background-color: #ffedd5 !important;
+  color: #c2410c !important;
 }
 .btn-text { @apply text-sm font-semibold; color: var(--color-navy-700); }
 .btn-text:hover { color: var(--color-gold-600); }
@@ -754,7 +855,12 @@ table tbody tr:hover { background-color: var(--color-surface); }
 .td-nowrap { @apply whitespace-nowrap; }
 .td-price { @apply font-semibold; font-family: var(--font-display); color: var(--color-gold-600); }
 .td-date { @apply text-xs; color: color-mix(in srgb, var(--color-ink) 55%, transparent); }
-.td-id { @apply font-mono text-xs; color: color-mix(in srgb, var(--color-ink) 40%, transparent); }
+.td-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+}
 .row-actions { @apply flex flex-nowrap items-center gap-2; }
 .table-img {
   @apply h-12 w-12 rounded-lg object-cover;
@@ -1307,18 +1413,6 @@ table tbody tr:hover { background-color: var(--color-surface); }
   margin-top: 0.125rem;
 }
 
-/* ════════════════════════════════════════════════════════════
-   BTN-ICON VARIANTE SUCCESS (VentasAdmin)
-════════════════════════════════════════════════════════════ */
-.btn-icon--success {
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-}
-.btn-icon--success:hover {
-  background: #dcfce7;
-  color: #15803d;
-}
 
 /* ════════════════════════════════════════════════════════════
    TOGGLE SWITCH (FranjasAdmin)

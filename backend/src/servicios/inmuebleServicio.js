@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Inmueble = require('../modelos/Inmueble');
 const ImagenInmueble = require('../modelos/ImagenInmueble');
 const Favorito = require('../modelos/Favorito');
+const Reserva = require('../modelos/Reserva');
+const Contrato = require('../modelos/Contrato');
 const ApiError = require('../utilidades/ApiError');
 const almacenamientoServicio = require('./almacenamientoServicio');
 
@@ -20,18 +22,33 @@ function construirFiltro(query) {
 
   if (query.tipo) filtro.tipo = query.tipo;
   if (query.modalidad) filtro.modalidad = query.modalidad;
-  if (query.ciudad) filtro['ubicacion.ciudad'] = new RegExp(query.ciudad, 'i');
-  if (query.barrio) filtro['ubicacion.barrio'] = new RegExp(query.barrio, 'i');
+  
+  const ubicacionTexto = query.ciudad || query.ubicacion;
+  if (ubicacionTexto) {
+    filtro.$or = [
+      { 'ubicacion.ciudad': new RegExp(ubicacionTexto.trim(), 'i') },
+      { 'ubicacion.barrio': new RegExp(ubicacionTexto.trim(), 'i') },
+      { 'ubicacion.direccion': new RegExp(ubicacionTexto.trim(), 'i') },
+    ];
+  } else if (query.barrio) {
+    filtro['ubicacion.barrio'] = new RegExp(query.barrio.trim(), 'i');
+  }
+
   if (query.habitaciones) filtro.habitaciones = { $gte: Number(query.habitaciones) };
   if (query.estado) filtro.estado = query.estado;
 
-  if (query.precioMin || query.precioMax) {
+  const precioMinimo = query.precioMin ?? query.precio_min;
+  const precioMaximo = query.precioMax ?? query.precio_max;
+
+  if (precioMinimo || precioMaximo) {
     filtro.precio = {};
-    if (query.precioMin) filtro.precio.$gte = Number(query.precioMin);
-    if (query.precioMax) filtro.precio.$lte = Number(query.precioMax);
+    if (precioMinimo) filtro.precio.$gte = Number(precioMinimo);
+    if (precioMaximo) filtro.precio.$lte = Number(precioMaximo);
   }
 
-  if (query.codigo) filtro.codigo = query.codigo;
+  if (query.codigo) {
+    filtro.codigo = new RegExp(query.codigo.trim(), 'i');
+  }
 
   return filtro;
 }
@@ -97,25 +114,17 @@ async function actualizar(id, datos) {
   return inmueble;
 }
 
-// Se consulta de forma perezosa (mongoose.modelNames()) porque los modelos Reserva/Contrato se
-// implementan en fases posteriores (5 y 6) de la migracion; hasta entonces esta funcion no
-// bloquea nada, y a partir de que esos modelos existan empieza a aplicar la regla sin tocar este
-// archivo de nuevo.
 async function tieneReservaOContratoActivo(inmuebleId) {
-  if (mongoose.modelNames().includes('Reserva')) {
-    const Reserva = mongoose.model('Reserva');
-    const activa = await Reserva.exists({
-      inmueble: inmuebleId,
-      estado: { $in: ['PENDIENTE_PAGO', 'PROCESANDO_PAGO', 'CONFIRMADA'] },
-      eliminado: false,
-    });
-    if (activa) return true;
-  }
-  if (mongoose.modelNames().includes('Contrato')) {
-    const Contrato = mongoose.model('Contrato');
-    const vigente = await Contrato.exists({ inmueble: inmuebleId, estado: 'Vigente' });
-    if (vigente) return true;
-  }
+  const activa = await Reserva.exists({
+    inmueble: inmuebleId,
+    estado: { $in: ['PENDIENTE_PAGO', 'PROCESANDO_PAGO', 'CONFIRMADA'] },
+    eliminado: false,
+  });
+  if (activa) return true;
+
+  const vigente = await Contrato.exists({ inmueble: inmuebleId, estado: 'Vigente' });
+  if (vigente) return true;
+
   return false;
 }
 

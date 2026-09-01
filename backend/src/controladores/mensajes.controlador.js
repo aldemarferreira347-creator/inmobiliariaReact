@@ -49,9 +49,13 @@ const conversaciones = asyncHandler(async (req, res) => {
 
 function hiloParaUsuarioActual(req) {
   const otroId = req.params.otroId;
-  return req.usuario.rol === ROLES.CLIENTE
-    ? { clienteId: req.usuario._id, staffId: otroId }
-    : { clienteId: otroId, staffId: req.usuario._id };
+  if (req.usuario.rol === ROLES.CLIENTE) {
+    return { clienteId: req.usuario._id, staffId: otroId };
+  }
+  if (req.usuario.rol === ROLES.ADMINISTRADOR && req.query.staffId) {
+    return { clienteId: otroId, staffId: req.query.staffId };
+  }
+  return { clienteId: otroId, staffId: req.usuario._id };
 }
 
 const hilo = asyncHandler(async (req, res) => {

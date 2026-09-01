@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Sparkles, Building2 } from 'lucide-react';
+import { Search, Sparkles } from 'lucide-react';
 import * as inmueblesServicio from '../../servicios/inmuebles.servicio';
 import TarjetaInmueble from '../../componentes/inmuebles/TarjetaInmueble';
 import FiltrosCatalogo from '../../componentes/inmuebles/FiltrosCatalogo';

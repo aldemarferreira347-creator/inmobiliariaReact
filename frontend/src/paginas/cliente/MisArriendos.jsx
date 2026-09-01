@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Home, FileText, Download } from 'lucide-react';
+import { Home, Download } from 'lucide-react';
 import * as contratosServicio from '../../servicios/contratos.servicio';
 
 export default function MisArriendos() {

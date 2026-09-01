@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  Building2, Users, ClipboardList, FileText, Calendar,
+  Building2, Users, ClipboardList, FileText, DollarSign, Calendar,
   Clock, BarChart2, MessageSquare, Search, Bell,
   Megaphone, Shield, LogOut,
 } from 'lucide-react';
@@ -8,9 +8,10 @@ import { useAuth } from '../../contexto/AuthContext';
 
 const ENLACES_ADMIN = [
   { to: '/administrador/inmuebles',     texto: 'Gestión de Inmuebles',  Icon: Building2 },
-  { to: '/administrador/usuarios',      texto: 'Gestión de Clientes',   Icon: Users },
+  { to: '/administrador/usuarios',      texto: 'Gestión de Usuarios',   Icon: Users },
   { to: '/administrador/reservas',      texto: 'Reservas',              Icon: ClipboardList },
   { to: '/administrador/contratos',     texto: 'Contratos',             Icon: FileText },
+  { to: '/administrador/ventas',        texto: 'Gestión de Ventas',     Icon: DollarSign },
   { to: '/administrador/citas',         texto: 'Gestión de Citas',      Icon: Calendar },
   { to: '/administrador/franjas',       texto: 'Franjas de Citas',      Icon: Clock },
   { to: '/administrador/reportes',      texto: 'Reportes',              Icon: BarChart2 },
